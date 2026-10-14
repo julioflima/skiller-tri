@@ -81,6 +81,7 @@ export default async function AnalysisPage({ searchParams }: { searchParams: Pro
   const corr = correlationMatrix(
     profiles.map((p) => p.values),
     metodo,
+    categories.length,
   );
   const pairs = categories
     .flatMap((a, i) => categories.slice(i + 1).map((b, d) => ({ a, b, r: corr.r[i][i + 1 + d], n: corr.n[i][i + 1 + d] })))

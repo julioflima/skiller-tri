@@ -49,8 +49,8 @@ export type CorrMethod = "spearman" | "pearson";
  * Matriz de correlação entre colunas, usando só as linhas em que as duas colunas têm valor
  * (pairwise complete). Pares com menos de `minN` observações ficam NaN.
  */
-export function correlationMatrix(rows: (number | null)[][], method: CorrMethod, minN = 5) {
-  const p = rows[0]?.length ?? 0;
+/** `p` é o número de variáveis; sem linhas a matriz ainda sai p×p (vazia), não 0×0. */
+export function correlationMatrix(rows: (number | null)[][], method: CorrMethod, p = rows[0]?.length ?? 0, minN = 5) {
   const r: number[][] = Array.from({ length: p }, () => new Array(p).fill(NaN));
   const n: number[][] = Array.from({ length: p }, () => new Array(p).fill(0));
   const f = method === "spearman" ? spearman : pearson;
