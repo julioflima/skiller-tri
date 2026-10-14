@@ -25,6 +25,7 @@ export default async function PainelLayout({ children }: { children: React.React
       <header className="topbar">
         <Link href="/painel" className="brand">
           <BrandMark />
+          <span className="hand brand-slogan">habilidades fora da caixa</span>
         </Link>
         <div className="row">
           <span className="faint">
