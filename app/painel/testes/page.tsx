@@ -37,7 +37,7 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
                 <thead>
                   <tr>
                     <th>Teste</th>
-                    <th>Excluído em</th>
+                    <th>Arquivado em</th>
                     <th>Pacientes arquivados</th>
                     <th />
                   </tr>

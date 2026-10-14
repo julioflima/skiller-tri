@@ -523,13 +523,9 @@ function StageCard({
 
 export function TestMetaEditor({
   test,
-  patients,
-  forms,
   defaultSymbolPrompt,
 }: {
   test: { id: string; name: string; description: string; active: boolean; symbolPrompt: string };
-  patients: number;
-  forms: number;
   defaultSymbolPrompt: string;
 }) {
   const { run, pending, toast } = useRunner();
@@ -564,15 +560,15 @@ export function TestMetaEditor({
         <button className="btn" disabled={pending} onClick={() => run(() => updateTestMeta(test.id, f.name, f.description, f.active, f.symbolPrompt))}>
           Salvar
         </button>
-        <span style={{ flex: 1 }} />
-        <DeleteTestButton testId={test.id} name={test.name} patients={patients} forms={forms} />
       </div>
     </section>
   );
 }
 
-/** Exclusão do teste em duas confirmações: primeiro o que será apagado, depois a senha de quem exclui. */
-function DeleteTestButton({ testId, name, patients, forms }: { testId: string; name: string; patients: number; forms: number }) {
+// ---------------- configuração ----------------
+
+/** Arquivar o teste em duas confirmações: primeiro o que muda, depois a senha de quem arquiva. */
+export function ArchiveTestSection({ testId, name, patients, forms }: { testId: string; name: string; patients: number; forms: number }) {
   const { run, pending, toast, router } = useRunner();
   const ref = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<1 | 2>(1);
@@ -583,15 +579,22 @@ function DeleteTestButton({ testId, name, patients, forms }: { testId: string; n
     setPassword("");
   };
   return (
-    <>
+    <section className="card stack">
       {toast.node}
-      <button type="button" className="btn ghost sm danger" onClick={() => ref.current?.showModal()}>
-        Excluir teste
-      </button>
+      <h2 style={{ margin: 0 }}>Arquivar</h2>
+      <p className="muted" style={{ margin: 0 }}>
+        O teste sai do painel, das escolas e da landing, e os pacientes que o usam são arquivados com o histórico guardado. Dá para restaurar
+        depois na aba Arquivo da lista de testes.
+      </p>
+      <div>
+        <button type="button" className="btn ghost danger" onClick={() => ref.current?.showModal()}>
+          Arquivar teste
+        </button>
+      </div>
       <dialog ref={ref} className="qr-dialog" onClose={close}>
         {step === 1 ? (
           <>
-            <h3 style={{ margin: 0 }}>Excluir &quot;{name}&quot;?</h3>
+            <h3 style={{ margin: 0 }}>Arquivar &quot;{name}&quot;?</h3>
             <p style={{ margin: 0 }}>
               O teste sai do painel, das escolas e da landing.{" "}
               {patients > 0 &&
@@ -620,12 +623,12 @@ function DeleteTestButton({ testId, name, patients, forms }: { testId: string; n
           >
             <h3 style={{ margin: 0 }}>Confirme com sua senha</h3>
             <div>
-              <label htmlFor="del-test-pw">Senha</label>
-              <input id="del-test-pw" type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <label htmlFor="archive-test-pw">Senha</label>
+              <input id="archive-test-pw" type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <div className="row">
               <button className="btn danger" disabled={pending || !password}>
-                {pending ? "Excluindo…" : "Excluir definitivamente"}
+                {pending ? "Arquivando…" : "Arquivar teste"}
               </button>
               <button type="button" className="btn ghost" onClick={close}>
                 Cancelar
@@ -634,7 +637,7 @@ function DeleteTestButton({ testId, name, patients, forms }: { testId: string; n
           </form>
         )}
       </dialog>
-    </>
+    </section>
   );
 }
 

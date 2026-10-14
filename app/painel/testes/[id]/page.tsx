@@ -5,7 +5,7 @@ import { readDb } from "@/lib/db";
 import { poolFor } from "@/lib/forms";
 import { optionSymbolSrc } from "@/app/components/SymbolImg";
 import { DEFAULT_SYMBOL_PROMPT, symbolPromptFor } from "@/lib/symbols";
-import { CategoriesEditor, LandingEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
+import { ArchiveTestSection, CategoriesEditor, LandingEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
 import { QuestionsEditor } from "./QuestionsEditor";
 import { Coverage } from "./Coverage";
 import { TestChat } from "./TestChat";
@@ -60,6 +60,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
         {tab("landing", "Landing page")}
+        {tab("configuracao", "Configuração")}
       </nav>
 
       {aba === "landing" ? (
@@ -113,7 +114,12 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         <TestMetaEditor
           test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
           defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
-          patients={db.patients.filter((p) => p.testId === test.id).length}
+        />
+      ) : aba === "configuracao" ? (
+        <ArchiveTestSection
+          testId={test.id}
+          name={test.name}
+          patients={db.patients.filter((p) => p.testId === test.id && !p.archived).length}
           forms={db.forms.filter((f) => f.testId === test.id).length}
         />
       ) : (

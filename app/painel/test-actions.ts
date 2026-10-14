@@ -192,7 +192,7 @@ export async function deleteTest(id: string, password: string) {
       t.active = false;
       t.deletedAt = new Date().toISOString();
     });
-    return "Teste excluído. Ele fica na aba Arquivo.";
+    return "Teste arquivado. Ele fica na aba Arquivo da lista de testes.";
   });
 }
 
