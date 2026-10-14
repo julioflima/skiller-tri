@@ -127,7 +127,9 @@ export async function setArchived(id: string, archived: boolean) {
   return guard(async () => {
     const user = await requireUser({ manager: true });
     await updateDb((db) => {
-      getPatient(db, user, id).archived = archived;
+      const p = getPatient(db, user, id);
+      if (!archived && db.tests.find((t) => t.id === p.testId)?.deletedAt) fail("O teste deste paciente foi excluído: ele fica só no arquivo.");
+      p.archived = archived;
     });
     return archived ? "Paciente arquivado." : "Paciente reativado.";
   });

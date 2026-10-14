@@ -6,6 +6,7 @@ import { NewTestForm } from "./NewTestForm";
 export default async function TestsPage() {
   await requirePageUser({ admin: true });
   const db = await readDb();
+  const tests = db.tests.filter((t) => !t.deletedAt);
   return (
     <div className="stack">
       <h1 style={{ margin: 0 }}>Testes</h1>
@@ -27,7 +28,7 @@ export default async function TestsPage() {
               </tr>
             </thead>
             <tbody>
-              {db.tests.map((t) => (
+              {tests.map((t) => (
                 <tr key={t.id}>
                   <td>
                     <Link href={`/painel/testes/${t.id}`}>
@@ -46,7 +47,7 @@ export default async function TestsPage() {
           </table>
         </div>
       </section>
-      <NewTestForm tests={db.tests.map((t) => ({ id: t.id, name: t.name }))} />
+      <NewTestForm tests={tests.map((t) => ({ id: t.id, name: t.name }))} />
     </div>
   );
 }

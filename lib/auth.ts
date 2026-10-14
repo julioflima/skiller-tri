@@ -103,7 +103,7 @@ export function canSeePatient(user: SessionUser, patient: { therapistId: string;
 
 /** Testes que o usuário pode aplicar: todos para o dono; os da escola (ativa) para quem é da escola. */
 export function testsFor(db: Db, user: SessionUser) {
-  if (user.role === "admin") return db.tests;
+  if (user.role === "admin") return db.tests.filter((t) => !t.deletedAt);
   const school = db.schools.find((s) => s.id === user.schoolId && s.active);
   return school ? db.tests.filter((t) => school.testIds.includes(t.id)) : [];
 }

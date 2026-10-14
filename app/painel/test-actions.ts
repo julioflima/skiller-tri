@@ -12,7 +12,7 @@ const ROLES: RespondentRole[] = ["paciente", "responsavel", "terapeuta"];
 const ABOUTS: About[] = ["si", "outro", "paciente"];
 
 function getTest(db: Db, id: string) {
-  const t = db.tests.find((x) => x.id === id);
+  const t = db.tests.find((x) => x.id === id && !x.deletedAt);
   if (!t) fail("Teste não encontrado.");
   return t;
 }
@@ -166,8 +166,8 @@ export async function saveLanding(id: string, input: TestLanding) {
 }
 
 /**
- * Exclui o teste com tudo o que depende dele: pacientes, sessões, formulários e respostas, a landing e o vínculo com as escolas.
- * É a segunda confirmação da tela: só passa com a senha de quem está excluindo.
+ * Exclui o teste: sai do painel, das escolas e da landing, e os pacientes que o usavam são arquivados.
+ * O teste continua guardado para o histórico desses pacientes. É a segunda confirmação da tela: só passa com a senha.
  */
 export async function deleteTest(id: string, password: string) {
   return guard(async () => {
@@ -177,13 +177,14 @@ export async function deleteTest(id: string, password: string) {
     if (!password || !u || !(await verifyPassword(password, u.passwordHash))) fail("Senha incorreta.");
     const images = await updateDb((db) => {
       const t = getTest(db, id);
-      const patientIds = new Set(db.patients.filter((p) => p.testId === id).map((p) => p.id));
-      db.forms = db.forms.filter((f) => f.testId !== id && !patientIds.has(f.patientId));
-      db.sessions = db.sessions.filter((s) => !patientIds.has(s.patientId));
-      db.patients = db.patients.filter((p) => !patientIds.has(p.id));
+      for (const p of db.patients) if (p.testId === id) p.archived = true;
       for (const s of db.schools) s.testIds = s.testIds.filter((x) => x !== id);
-      db.tests = db.tests.filter((x) => x.id !== id);
-      return [t.landing?.logoUrl, t.landing?.heroImageUrl];
+      const images = [t.landing?.logoUrl, t.landing?.heroImageUrl];
+      // libera o endereço da landing para outro teste
+      delete t.landing;
+      t.active = false;
+      t.deletedAt = new Date().toISOString();
+      return images;
     });
     await Promise.all(images.map(deleteLandingImage));
     return "Teste excluído.";

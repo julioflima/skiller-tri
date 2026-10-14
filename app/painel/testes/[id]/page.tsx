@@ -18,7 +18,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
   const { id } = await params;
   const { aba = "perguntas" } = await searchParams;
   const db = await readDb();
-  const test = db.tests.find((t) => t.id === id);
+  const test = db.tests.find((t) => t.id === id && !t.deletedAt);
   if (!test) notFound();
 
   const used = new Set(db.forms.filter((f) => f.testId === test.id).flatMap((f) => f.items.map((i) => i.questionId)));

@@ -593,9 +593,9 @@ function DeleteTestButton({ testId, name, patients, forms }: { testId: string; n
           <>
             <h3 style={{ margin: 0 }}>Excluir &quot;{name}&quot;?</h3>
             <p style={{ margin: 0 }}>
-              {patients
-                ? `Serão apagados também ${patients} paciente${patients > 1 ? "s" : ""} e ${forms} formulário${forms === 1 ? "" : "s"} com todas as respostas, além da landing do teste.`
-                : "O teste, suas perguntas e a landing serão apagados."}{" "}
+              O teste sai do painel, das escolas e da landing.{" "}
+              {patients > 0 &&
+                `${patients} paciente${patients > 1 ? "s" : ""} que o usa${patients > 1 ? "m" : ""} ser${patients > 1 ? "ão" : "á"} arquivado${patients > 1 ? "s" : ""}, com ${forms} formulário${forms === 1 ? "" : "s"} e as respostas guardados no histórico. `}
               Não dá para desfazer.
             </p>
             <div className="row">

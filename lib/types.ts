@@ -82,6 +82,11 @@ export type Test = {
   symbolPrompt?: string;
   /** Página pública do teste (/teste/<slug>). */
   landing?: TestLanding;
+  /**
+   * Teste excluído: some do painel, das escolas e da landing, mas continua guardado para o histórico
+   * dos pacientes que o usavam (arquivados na exclusão).
+   */
+  deletedAt?: string;
 };
 
 export type TestLanding = {

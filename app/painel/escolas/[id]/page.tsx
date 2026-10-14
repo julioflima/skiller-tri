@@ -52,7 +52,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
             testIds: school.testIds,
             testsInUse: [...new Set(patients.map((p) => p.testId))],
           }}
-          tests={db.tests.map((t) => ({ id: t.id, name: t.name, active: t.active }))}
+          tests={db.tests.filter((t) => !t.deletedAt).map((t) => ({ id: t.id, name: t.name, active: t.active }))}
         />
       ) : aba !== "equipe" ? (
         <section className="card stack">
