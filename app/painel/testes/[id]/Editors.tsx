@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
 import type { About, Category, RespondentRole, Scale, Stage, StageRule, TestLanding } from "@/lib/types";
@@ -524,13 +524,15 @@ function StageCard({
 export function TestMetaEditor({
   test,
   patients,
+  forms,
   defaultSymbolPrompt,
 }: {
   test: { id: string; name: string; description: string; active: boolean; symbolPrompt: string };
   patients: number;
+  forms: number;
   defaultSymbolPrompt: string;
 }) {
-  const { run, pending, toast, router } = useRunner();
+  const { run, pending, toast } = useRunner();
   const [f, setF] = useState(test);
   return (
     <section className="card stack">
@@ -563,16 +565,76 @@ export function TestMetaEditor({
           Salvar
         </button>
         <span style={{ flex: 1 }} />
-        <button
-          className="btn ghost sm danger"
-          disabled={pending || patients > 0}
-          title={patients ? "Há pacientes usando este teste" : ""}
-          onClick={() => confirm("Excluir este teste definitivamente?") && run(() => deleteTest(test.id), () => router.push("/painel/testes"))}
-        >
-          Excluir teste
-        </button>
+        <DeleteTestButton testId={test.id} name={test.name} patients={patients} forms={forms} />
       </div>
     </section>
+  );
+}
+
+/** Exclusão do teste em duas confirmações: primeiro o que será apagado, depois a senha de quem exclui. */
+function DeleteTestButton({ testId, name, patients, forms }: { testId: string; name: string; patients: number; forms: number }) {
+  const { run, pending, toast, router } = useRunner();
+  const ref = useRef<HTMLDialogElement>(null);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [password, setPassword] = useState("");
+  const close = () => {
+    ref.current?.close();
+    setStep(1);
+    setPassword("");
+  };
+  return (
+    <>
+      {toast.node}
+      <button type="button" className="btn ghost sm danger" onClick={() => ref.current?.showModal()}>
+        Excluir teste
+      </button>
+      <dialog ref={ref} className="qr-dialog" onClose={close}>
+        {step === 1 ? (
+          <>
+            <h3 style={{ margin: 0 }}>Excluir &quot;{name}&quot;?</h3>
+            <p style={{ margin: 0 }}>
+              {patients
+                ? `Serão apagados também ${patients} paciente${patients > 1 ? "s" : ""} e ${forms} formulário${forms === 1 ? "" : "s"} com todas as respostas, além da landing do teste.`
+                : "O teste, suas perguntas e a landing serão apagados."}{" "}
+              Não dá para desfazer.
+            </p>
+            <div className="row">
+              <button type="button" className="btn danger" onClick={() => setStep(2)}>
+                Sim, continuar
+              </button>
+              <button type="button" className="btn ghost" onClick={close}>
+                Cancelar
+              </button>
+            </div>
+          </>
+        ) : (
+          <form
+            className="stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run(() => deleteTest(testId, password), () => {
+                close();
+                router.push("/painel/testes");
+              });
+            }}
+          >
+            <h3 style={{ margin: 0 }}>Confirme com sua senha</h3>
+            <div>
+              <label htmlFor="del-test-pw">Senha</label>
+              <input id="del-test-pw" type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            <div className="row">
+              <button className="btn danger" disabled={pending || !password}>
+                {pending ? "Excluindo…" : "Excluir definitivamente"}
+              </button>
+              <button type="button" className="btn ghost" onClick={close}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+      </dialog>
+    </>
   );
 }
 

@@ -114,6 +114,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
           test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
           defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
           patients={db.patients.filter((p) => p.testId === test.id).length}
+          forms={db.forms.filter((f) => f.testId === test.id).length}
         />
       ) : (
         <QuestionsEditor

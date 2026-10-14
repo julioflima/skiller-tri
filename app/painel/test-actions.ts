@@ -3,6 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
 import { FILES_ROUTE, deleteLandingImage, landingFolder, saveLandingImage } from "@/lib/landing-files";
+import { verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
 import { DEFAULT_SYMBOL_PROMPT, aiConfig, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
 import type { About, Db, RespondentRole, Scale, Stage, Test, TestLanding } from "@/lib/types";
@@ -164,13 +165,27 @@ export async function saveLanding(id: string, input: TestLanding) {
   });
 }
 
-export async function deleteTest(id: string) {
+/**
+ * Exclui o teste com tudo o que depende dele: pacientes, sessões, formulários e respostas, a landing e o vínculo com as escolas.
+ * É a segunda confirmação da tela: só passa com a senha de quem está excluindo.
+ */
+export async function deleteTest(id: string, password: string) {
   return guard(async () => {
-    await admin();
-    await updateDb((db) => {
-      if (db.patients.some((p) => p.testId === id)) fail("Há pacientes usando este teste. Desative-o em vez de excluir.");
-      db.tests = db.tests.filter((t) => t.id !== id);
+    const me = await admin();
+    const db = await readDb();
+    const u = db.users.find((x) => x.id === me.id);
+    if (!password || !u || !(await verifyPassword(password, u.passwordHash))) fail("Senha incorreta.");
+    const images = await updateDb((db) => {
+      const t = getTest(db, id);
+      const patientIds = new Set(db.patients.filter((p) => p.testId === id).map((p) => p.id));
+      db.forms = db.forms.filter((f) => f.testId !== id && !patientIds.has(f.patientId));
+      db.sessions = db.sessions.filter((s) => !patientIds.has(s.patientId));
+      db.patients = db.patients.filter((p) => !patientIds.has(p.id));
+      for (const s of db.schools) s.testIds = s.testIds.filter((x) => x !== id);
+      db.tests = db.tests.filter((x) => x.id !== id);
+      return [t.landing?.logoUrl, t.landing?.heroImageUrl];
     });
+    await Promise.all(images.map(deleteLandingImage));
     return "Teste excluído.";
   });
 }
