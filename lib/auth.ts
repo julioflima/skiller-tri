@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { readDb } from "./db";
-import type { User } from "./types";
+import type { Db, User } from "./types";
 
 const COOKIE = "st_session";
 const MAX_AGE = 60 * 60 * 12; // 12 horas
@@ -68,6 +68,18 @@ export async function requireUser(opts?: { admin?: boolean }) {
   return user;
 }
 
-export function canSeePatient(user: SessionUser, patient: { therapistId: string }) {
-  return user.role === "admin" || patient.therapistId === user.id;
+/**
+ * O administrador (equipe da plataforma) vê tudo. O terapeuta não acessa a plataforma: só os testes aplicados
+ * na sua escola pelos seus pacientes.
+ */
+export function canSeePatient(user: SessionUser, patient: { therapistId: string; schoolId: string }) {
+  if (user.role === "admin") return true;
+  return patient.therapistId === user.id && !!user.schoolId && patient.schoolId === user.schoolId;
+}
+
+/** Testes que o usuário pode aplicar: todos para o administrador; os da escola (ativa) para o terapeuta. */
+export function testsFor(db: Db, user: SessionUser) {
+  if (user.role === "admin") return db.tests;
+  const school = db.schools.find((s) => s.id === user.schoolId && s.active);
+  return school ? db.tests.filter((t) => school.testIds.includes(t.id)) : [];
 }

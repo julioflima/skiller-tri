@@ -80,6 +80,35 @@ export type Test = {
   stages: Stage[];
   /** Instruções para a IA desenhar os símbolos deste teste. Vazio = DEFAULT_SYMBOL_PROMPT. */
   symbolPrompt?: string;
+  /** Página pública do teste (/teste/<slug>). */
+  landing?: TestLanding;
+};
+
+export type TestLanding = {
+  slug: string;
+  published: boolean;
+  /** Frase manuscrita acima do título. */
+  slogan: string;
+  headline: string;
+  lead: string;
+  /** Título e texto da seção das classificações. Vazio = "N classificações". */
+  skillsTitle: string;
+  skillsLead: string;
+  /** Imagens da marca do teste (caminho em /public ou URL). Vazio = sem imagem. */
+  logoUrl: string;
+  heroImageUrl: string;
+  /** Destino do botão "Falar com a equipe". Vazio = CONTACT_URL. */
+  contactUrl: string;
+};
+
+/** Escola: uma equipe de terapeutas que aplica alguns testes da plataforma aos próprios pacientes. */
+export type School = {
+  id: string;
+  name: string;
+  /** Testes que a escola pode aplicar. */
+  testIds: string[];
+  active: boolean;
+  createdAt: string;
 };
 
 export type User = {
@@ -87,7 +116,10 @@ export type User = {
   name: string;
   email: string;
   passwordHash: string;
+  /** admin = equipe da plataforma; terapeuta = membro de uma escola. */
   role: "admin" | "terapeuta";
+  /** Escola do terapeuta. Administradores não pertencem a escola. */
+  schoolId?: string;
   active: boolean;
   createdAt: string;
   /** Link permanente do terapeuta para responder os formulários de todos os seus pacientes. */
@@ -101,6 +133,7 @@ export type Invite = {
   email: string;
   name: string;
   role: User["role"];
+  schoolId?: string;
   token: string;
   invitedBy: string;
   createdAt: string;
@@ -123,6 +156,8 @@ export type Patient = {
   birthDate?: string;
   email?: string;
   testId: string;
+  /** Escola onde o teste é aplicado; o terapeuta é sempre dessa escola. */
+  schoolId: string;
   therapistId: string;
   guardians: Guardian[];
   token: string;
@@ -193,6 +228,7 @@ export type Settings = {
 export type Db = {
   version: 2;
   settings: Settings;
+  schools: School[];
   users: User[];
   invites: Invite[];
   tests: Test[];

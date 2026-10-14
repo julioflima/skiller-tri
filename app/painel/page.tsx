@@ -1,28 +1,35 @@
 import Link from "next/link";
-import { requirePageUser } from "@/lib/auth";
+import { canSeePatient, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 
-export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; terapeuta?: string; arquivados?: string }> }) {
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; escola?: string; terapeuta?: string; arquivados?: string }> }) {
   const user = await requirePageUser();
-  const { q = "", terapeuta = "", arquivados = "" } = await searchParams;
+  const { q = "", escola = "", terapeuta = "", arquivados = "" } = await searchParams;
   const db = await readDb();
   const users = new Map(db.users.map((u) => [u.id, u]));
   const tests = new Map(db.tests.map((t) => [t.id, t]));
+  const schools = new Map(db.schools.map((s) => [s.id, s]));
+  const isAdmin = user.role === "admin";
   const term = q.trim().toLowerCase();
 
   const list = db.patients
-    .filter((p) => user.role === "admin" || p.therapistId === user.id)
+    .filter((p) => canSeePatient(user, p))
     .filter((p) => (arquivados ? p.archived : !p.archived))
+    .filter((p) => !escola || p.schoolId === escola)
     .filter((p) => !terapeuta || p.therapistId === terapeuta)
     .filter((p) => !term || p.name.toLowerCase().includes(term) || p.guardians.some((g) => g.name.toLowerCase().includes(term)))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
-  const therapists = db.users.filter((u) => u.active);
+  const therapists = db.users.filter((u) => u.active && u.role === "terapeuta" && (!escola || u.schoolId === escola));
+  const mySchool = isAdmin ? undefined : schools.get(user.schoolId ?? "");
 
   return (
     <div className="stack">
       <div className="row spread">
-        <h1 style={{ margin: 0 }}>Pacientes</h1>
+        <div>
+          <h1 style={{ margin: 0 }}>Pacientes</h1>
+          {!isAdmin && <p className="muted" style={{ margin: 0 }}>{mySchool ? `Seus pacientes na ${mySchool.name}` : "Sua conta não está ligada a uma escola."}</p>}
+        </div>
         <Link href="/painel/pacientes/novo" className="btn warm">
           + Novo paciente
         </Link>
@@ -30,7 +37,17 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
       <form className="card alt row tight">
         <input type="search" name="q" placeholder="Buscar paciente ou responsável…" defaultValue={q} style={{ flex: 2, minWidth: 200 }} />
-        {user.role === "admin" && (
+        {isAdmin && (
+          <select name="escola" defaultValue={escola} style={{ flex: 1, minWidth: 160 }}>
+            <option value="">Todas as escolas</option>
+            {db.schools.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {isAdmin && (
           <select name="terapeuta" defaultValue={terapeuta} style={{ flex: 1, minWidth: 160 }}>
             <option value="">Todos os terapeutas</option>
             {therapists.map((t) => (
@@ -58,7 +75,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <tr>
                   <th>Paciente</th>
                   <th>Responsáveis</th>
-                  {user.role === "admin" && <th>Terapeuta</th>}
+                  {isAdmin && <th>Escola</th>}
+                  {isAdmin && <th>Terapeuta</th>}
                   <th>Teste</th>
                   <th>Sessões</th>
                   <th>Pendências</th>
@@ -77,7 +95,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                         </Link>
                       </td>
                       <td className="small">{p.guardians.map((g) => g.name).join(", ") || "—"}</td>
-                      {user.role === "admin" && <td className="small">{users.get(p.therapistId)?.name ?? "—"}</td>}
+                      {isAdmin && <td className="small">{schools.get(p.schoolId)?.name ?? "—"}</td>}
+                      {isAdmin && <td className="small">{users.get(p.therapistId)?.name ?? "—"}</td>}
                       <td className="small">{tests.get(p.testId)?.name ?? "—"}</td>
                       <td>{sessions}</td>
                       <td>{pending ? <span className="pill mid">{pending} formulário(s)</span> : <span className="pill high">em dia</span>}</td>

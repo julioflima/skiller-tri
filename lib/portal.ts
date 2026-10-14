@@ -35,7 +35,7 @@ export function resolveToken(db: Db, token: string): PortalIdentity | null {
   }
   for (const u of db.users) {
     if (u.active && eq(u.token, token)) {
-      const mine = new Set(db.patients.filter((p) => p.therapistId === u.id && !p.archived).map((p) => p.id));
+      const mine = new Set(db.patients.filter((p) => p.therapistId === u.id && p.schoolId === u.schoolId && !p.archived).map((p) => p.id));
       return { name: u.name, roleLabel: "Terapeuta", owns: (f) => mine.has(f.patientId) && f.respondent.role === "terapeuta" };
     }
   }

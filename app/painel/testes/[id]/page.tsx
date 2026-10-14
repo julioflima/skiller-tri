@@ -5,7 +5,7 @@ import { readDb } from "@/lib/db";
 import { poolFor } from "@/lib/forms";
 import { optionSymbolSrc } from "@/app/components/SymbolImg";
 import { DEFAULT_SYMBOL_PROMPT, symbolPromptFor } from "@/lib/symbols";
-import { CategoriesEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
+import { CategoriesEditor, LandingEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
 import { QuestionsEditor } from "./QuestionsEditor";
 import { Coverage } from "./Coverage";
 import { TestChat } from "./TestChat";
@@ -46,10 +46,23 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         {tab("respostas", "Respostas e pesos")}
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
+        {tab("landing", "Landing page")}
         {tab("assistente", "Assistente IA")}
       </nav>
 
-      {aba === "assistente" ? (
+      {aba === "landing" ? (
+        <LandingEditor
+          testId={test.id}
+          landing={test.landing}
+          suggestedSlug={test.name
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 40)}
+        />
+      ) : aba === "assistente" ? (
         <TestChat testId={test.id} hasKey={hasKey} />
       ) : aba === "classificacoes" ? (
         <CategoriesEditor

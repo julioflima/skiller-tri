@@ -8,8 +8,8 @@ const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "KAY12 · Habilidades fora da caixa",
-  description: "Avaliação das 12 habilidades socioemocionais.",
+  title: "Skiller TRI · Acompanhamento por meio de testes",
+  description: "Plataforma de escolas que acompanham seus pacientes por meio de testes.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

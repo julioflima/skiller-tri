@@ -7,7 +7,25 @@ import type { Result } from "@/lib/result";
 import { createUser, resetUserPassword, updateUser } from "../user-actions";
 
 type Role = "admin" | "terapeuta";
-type Member = { id: string; name: string; email: string; role: Role; active: boolean; patients: number };
+type Member = { id: string; name: string; email: string; role: Role; schoolId?: string; school?: string; active: boolean; patients: number };
+type SchoolOption = { id: string; name: string };
+
+/** Escola só faz sentido para terapeuta; administrador é da plataforma. */
+export function SchoolSelect({ role, value, schools, onChange }: { role: Role; value?: string; schools: SchoolOption[]; onChange: (id: string) => void }) {
+  if (role !== "terapeuta") return null;
+  return (
+    <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label="Escola" required style={{ flex: 1.5, minWidth: 160 }}>
+      <option value="" disabled>
+        Escola…
+      </option>
+      {schools.map((s) => (
+        <option key={s.id} value={s.id}>
+          {s.name}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function useRunner() {
   const router = useRouter();
@@ -24,9 +42,9 @@ function useRunner() {
   return { run, pending, toast };
 }
 
-export function NewMemberForm() {
+export function NewMemberForm({ schools }: { schools: SchoolOption[] }) {
   const { run, pending, toast } = useRunner();
-  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role };
+  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role, schoolId: schools.length === 1 ? schools[0].id : "" };
   const [f, setF] = useState(empty);
   return (
     <section className="card">
@@ -55,6 +73,7 @@ export function NewMemberForm() {
           <option value="terapeuta">Terapeuta</option>
           <option value="admin">Administrador</option>
         </select>
+        <SchoolSelect role={f.role} value={f.schoolId} schools={schools} onChange={(schoolId) => setF({ ...f, schoolId })} />
         <button className="btn warm" disabled={pending}>
           Cadastrar
         </button>
@@ -63,23 +82,23 @@ export function NewMemberForm() {
   );
 }
 
-export function MembersTable({ members, meId }: { members: Member[]; meId: string }) {
+export function MembersTable({ members, meId, schools }: { members: Member[]; meId: string; schools: SchoolOption[] }) {
   return (
     <section className="card">
       <h2>Contas</h2>
       <div className="stack">
         {members.map((m) => (
-          <MemberRow key={m.id} m={m} isMe={m.id === meId} />
+          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} />
         ))}
       </div>
     </section>
   );
 }
 
-function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
+function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: SchoolOption[] }) {
   const { run, pending, toast } = useRunner();
   const [editing, setEditing] = useState(false);
-  const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, active: m.active });
+  const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, schoolId: m.schoolId, active: m.active });
   const [pw, setPw] = useState("");
 
   return (
@@ -94,6 +113,7 @@ function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
               <option value="terapeuta">Terapeuta</option>
               <option value="admin">Administrador</option>
             </select>
+            <SchoolSelect role={f.role} value={f.schoolId} schools={schools} onChange={(schoolId) => setF({ ...f, schoolId })} />
             <label className="small" style={{ fontWeight: 400, margin: 0 }}>
               <input type="checkbox" checked={f.active} disabled={isMe} onChange={(e) => setF({ ...f, active: e.target.checked })} /> ativa
             </label>
@@ -126,7 +146,7 @@ function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
             <strong>{m.name}</strong> {isMe && <span className="faint">(você)</span>}
             <div className="faint">{m.email}</div>
           </div>
-          <span className="small">{m.role === "admin" ? "administrador" : "terapeuta"}</span>
+          <span className="small">{m.role === "admin" ? "administrador da plataforma" : `terapeuta · ${m.school ?? "sem escola"}`}</span>
           <span className="small faint">{m.patients} paciente(s)</span>
           {m.active ? <span className="pill high">ativa</span> : <span className="pill low">inativa</span>}
           <button className="btn ghost sm" onClick={() => setEditing(true)}>

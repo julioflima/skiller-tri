@@ -45,7 +45,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
   const answers = Object.fromEntries(Object.entries(form.answers).map(([k, a]) => [k, a.optionId]));
 
   return (
-    <main className="container narrow page">
+    <main className="quiz-page">
       <Quiz token={token} formId={form.id} name={who.name} items={items} blocks={form.blocks.map((b) => b.instruction)} initialAnswers={answers} />
     </main>
   );

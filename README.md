@@ -1,19 +1,41 @@
-# Skiller · Habilidades fora da caixa
+# Skiller TRI · Acompanhamento por meio de testes
 
-Acompanhamento terapêutico com testes configuráveis e tema de aquarela. O teste inicial vem da planilha
-*12 habilidades fora da caixa* (98 perguntas, 12 classificações, escala 0–4).
+Plataforma de escolas que acompanham seus pacientes por meio de testes configuráveis. Cada **escola** é uma equipe de
+terapeutas que aplica alguns testes da plataforma; cada **teste** tem a própria landing page. O teste inicial vem da planilha
+*12 habilidades fora da caixa* (KAY12: 98 perguntas, 12 classificações, escala 0–4).
 
 ## Quem usa
 
 | Rota | Quem | O que faz |
 |------|------|-----------|
-| `/` | equipe | Login com e-mail e senha. |
-| `/painel` | terapeuta e admin | Pacientes e famílias, links individuais, sessões, resultados e exportação CSV. O terapeuta vê só os próprios pacientes. |
-| `/painel/analise` | terapeuta e admin | Correlação entre habilidades, grupos de perfis, calibração TRI e tempo de resposta por pergunta. |
-| `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos e etapas. |
-| `/painel/equipe` | admin | Cadastro de terapeutas e administradores (direto ou por convite). |
+| `/` | público | Landing da plataforma, com os testes publicados. |
+| `/teste/<endereço>` | público | Landing de um teste (ex.: `/teste/kay12`). Rascunho: `?previa=1`, só para admin. |
+| `/entrar` | equipe | Login com e-mail e senha. |
+| `/painel` | terapeuta e admin | Pacientes e famílias, links individuais, sessões, resultados e exportação CSV. O terapeuta vê só os próprios pacientes, na sua escola. |
+| `/painel/analise` | terapeuta e admin | Correlação entre habilidades, grupos de perfis, calibração TRI e tempo de resposta por pergunta. O terapeuta vê só os testes da escola e os próprios pacientes. |
+| `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
+| `/painel/escolas` | admin | Escolas: nome, situação e quais testes cada uma aplica. |
+| `/painel/equipe` | admin | Cadastro de terapeutas (sempre de uma escola) e administradores (direto ou por convite). |
 | `/painel/configuracoes` | admin | Chave da API de IA, modelo e instruções para os símbolos. |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
+
+## Escolas e papéis
+
+- **Administrador**: equipe da plataforma. Não pertence a escola, vê tudo, cria testes, escolas e contas.
+- **Terapeuta**: membro de uma escola. Não acessa a plataforma: vê só os pacientes que acompanha, na sua escola, nos testes que
+  ela aplica (`canSeePatient` e `testsFor` em `lib/auth.ts`).
+- **Escola**: equipe de terapeutas + lista de testes aplicados. Todo paciente pertence a uma escola, e o terapeuta e o teste dele
+  precisam ser dessa escola. Um teste em uso por pacientes da escola não pode ser retirado dela; um terapeuta com pacientes não
+  troca de escola sem antes passá-los a outro terapeuta.
+
+Os dados anteriores às escolas são migrados na leitura (`migrate` em `lib/db.ts`, só acrescenta campos): terapeutas e pacientes vão
+para a escola **Fora da Caixa** (id fixo `escola-padrao`, com todos os testes) e o teste das 12 habilidades recebe a landing
+`/teste/kay12`, com o conteúdo que antes era a página inicial.
+
+## Landing dos testes
+
+Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. As classificações, quem
+responde e as etapas saem do próprio teste. Testes ativos e publicados aparecem na página inicial da plataforma.
 
 ## Pacientes e famílias
 

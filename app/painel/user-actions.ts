@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
+import type { Db } from "@/lib/types";
 import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, generateScaleSymbolsWithAI, svgDataUri } from "@/lib/symbols";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,7 +13,14 @@ function checkPassword(pw: string) {
   if (pw.length < 8) fail("A senha precisa ter pelo menos 8 caracteres.");
 }
 
-export async function createUser(input: { name: string; email: string; password: string; role: "admin" | "terapeuta" }) {
+/** Terapeuta precisa de uma escola existente; administrador é da plataforma e fica sem escola. */
+function schoolFor(db: Db, role: "admin" | "terapeuta", schoolId?: string) {
+  if (role === "admin") return undefined;
+  if (!db.schools.some((s) => s.id === schoolId)) fail("Escolha a escola do terapeuta.");
+  return schoolId;
+}
+
+export async function createUser(input: { name: string; email: string; password: string; role: "admin" | "terapeuta"; schoolId?: string }) {
   return guard(async () => {
     await requireUser({ admin: true });
     const name = input.name.trim();
@@ -23,12 +31,14 @@ export async function createUser(input: { name: string; email: string; password:
     const passwordHash = await hashPassword(input.password);
     await updateDb((db) => {
       if (db.users.some((u) => u.email === email)) fail("Já existe alguém com este e-mail.");
+      const role = input.role === "admin" ? "admin" : "terapeuta";
       db.users.push({
         id: newId(),
         name,
         email,
         passwordHash,
-        role: input.role === "admin" ? "admin" : "terapeuta",
+        role,
+        schoolId: schoolFor(db, role, input.schoolId),
         active: true,
         createdAt: new Date().toISOString(),
         token: newToken(),
@@ -38,7 +48,7 @@ export async function createUser(input: { name: string; email: string; password:
   });
 }
 
-export async function updateUser(id: string, input: { name: string; email: string; role: "admin" | "terapeuta"; active: boolean }) {
+export async function updateUser(id: string, input: { name: string; email: string; role: "admin" | "terapeuta"; schoolId?: string; active: boolean }) {
   return guard(async () => {
     const me = await requireUser({ admin: true });
     const email = input.email.trim().toLowerCase();
@@ -49,9 +59,17 @@ export async function updateUser(id: string, input: { name: string; email: strin
       if (!u) fail("Usuário não encontrado.");
       if (db.users.some((x) => x.email === email && x.id !== id)) fail("Já existe alguém com este e-mail.");
       if (u.id === me.id && (!input.active || input.role !== "admin")) fail("Você não pode desativar nem rebaixar a própria conta.");
+      const role = input.role === "admin" ? "admin" : "terapeuta";
+      const schoolId = schoolFor(db, role, input.schoolId);
+      if (schoolId !== u.schoolId) {
+        const n = db.patients.filter((p) => p.therapistId === u.id && p.schoolId === u.schoolId && !p.archived).length;
+        if (n && u.role === "terapeuta") fail(`${u.name} acompanha ${n} paciente(s) na escola atual. Passe-os a outro terapeuta antes de trocar de escola.`);
+      }
       u.name = input.name.trim();
       u.email = email;
-      u.role = input.role === "admin" ? "admin" : "terapeuta";
+      u.role = role;
+      if (schoolId) u.schoolId = schoolId;
+      else delete u.schoolId;
       u.active = input.active;
     });
     return "Dados salvos.";

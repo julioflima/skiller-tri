@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { canSeePatient, requirePageUser } from "@/lib/auth";
+import { canSeePatient, requirePageUser, testsFor } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { calibrate, IRT_STABLE_PERSONS } from "@/lib/irt";
 import { scoreForms } from "@/lib/scoring";
@@ -24,7 +24,9 @@ export default async function AnalysisPage({ searchParams }: { searchParams: Pro
   const user = await requirePageUser();
   const sp = await searchParams;
   const db = await readDb();
-  const tests = db.tests.filter((t) => db.forms.some((f) => f.testId === t.id && Object.keys(f.answers).length));
+  // o terapeuta só analisa os testes da escola, e só com os próprios pacientes (canSeePatient abaixo)
+  const allowed = new Set(testsFor(db, user).map((t) => t.id));
+  const tests = db.tests.filter((t) => allowed.has(t.id) && db.forms.some((f) => f.testId === t.id && Object.keys(f.answers).length));
   const test = tests.find((t) => t.id === sp.teste) ?? tests[0];
   const serie = SERIES.find((s) => s.key === sp.serie)?.key ?? "paciente:si";
   const metodo: CorrMethod = sp.metodo === "pearson" ? "pearson" : "spearman";

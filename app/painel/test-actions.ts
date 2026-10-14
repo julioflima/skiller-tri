@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
 import { fail, guard } from "@/lib/result";
 import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
-import type { About, Db, RespondentRole, Scale, Stage, Test } from "@/lib/types";
+import type { About, Db, RespondentRole, Scale, Stage, Test, TestLanding } from "@/lib/types";
 
 const ROLES: RespondentRole[] = ["paciente", "responsavel", "terapeuta"];
 const ABOUTS: About[] = ["si", "outro", "paciente"];
@@ -71,6 +71,7 @@ export async function createTest(name: string, mode: "vazio" | "padrao" | string
         test = {
           ...structuredClone(src),
           id: newId(),
+          landing: undefined,
           scales: src.scales.map((s) => ({ ...s, id: nid(s.id), options: s.options.map((o) => ({ ...o, id: newId() })) })),
           categories: src.categories.map((c) => ({ ...c, id: nid(c.id) })),
           questions: src.questions.map((q) => ({ ...q, id: newId(), categoryId: nid(q.categoryId), scaleId: nid(q.scaleId) })),
@@ -105,6 +106,40 @@ export async function updateTestMeta(id: string, name: string, description: stri
       else delete t.symbolPrompt;
     });
     return "Teste salvo.";
+  });
+}
+
+const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+/** Imagem da landing: arquivo de /public ou endereço https. */
+const IMAGE = /^(\/[\w./-]+|https:\/\/\S+)$/;
+
+export async function saveLanding(id: string, input: TestLanding) {
+  return guard(async () => {
+    await admin();
+    const slug = input.slug.trim().toLowerCase();
+    if (!SLUG.test(slug)) fail("O endereço usa só letras minúsculas, números e hífen (até 40).");
+    const text = (v: string) => (v ?? "").trim();
+    for (const url of [input.logoUrl, input.heroImageUrl].map(text)) if (url && !IMAGE.test(url)) fail("Imagem inválida: use um caminho como /brand/logo.svg ou um endereço https.");
+    const contactUrl = text(input.contactUrl);
+    if (contactUrl && !/^(https:\/\/|mailto:)\S+$/.test(contactUrl)) fail("O contato precisa começar com https:// ou mailto:.");
+    if (input.published && !text(input.headline)) fail("Escreva o título antes de publicar.");
+    await updateDb((db) => {
+      const t = getTest(db, id);
+      if (db.tests.some((x) => x.id !== id && x.landing?.slug === slug)) fail("Outro teste já usa este endereço.");
+      t.landing = {
+        slug,
+        published: input.published,
+        slogan: text(input.slogan),
+        headline: text(input.headline),
+        lead: text(input.lead),
+        skillsTitle: text(input.skillsTitle),
+        skillsLead: text(input.skillsLead),
+        logoUrl: text(input.logoUrl),
+        heroImageUrl: text(input.heroImageUrl),
+        contactUrl,
+      };
+    });
+    return input.published ? "Landing publicada." : "Landing salva (não publicada).";
   });
 }
 

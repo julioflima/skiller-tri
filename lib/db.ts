@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import seed from "./seed.json";
 import { hashPassword } from "./password";
-import type { Db, Test, User } from "./types";
+import type { Db, Test, TestLanding, User } from "./types";
 
 const DATA_FILE = process.env.DATA_FILE || path.join(process.cwd(), "data", "db.json");
 
@@ -126,6 +126,7 @@ async function buildInitialDb(): Promise<Db> {
   return {
     version: 2,
     settings: { model: "claude-opus-5-5" },
+    schools: [],
     users: [await adminUser(process.env.ADMIN_EMAIL || "", process.env.ADMIN_PASSWORD || "admin")],
     invites: [],
     tests: [buildDefaultTest()],
@@ -145,6 +146,7 @@ const usePostgres = () => Boolean(process.env.DATABASE_URL);
 const EMPTY: Db = {
   version: 2,
   settings: { model: "claude-opus-5-5" },
+  schools: [],
   users: [],
   invites: [],
   tests: [],
@@ -155,6 +157,54 @@ const EMPTY: Db = {
 
 function checkVersion(db: Db) {
   if (db.version !== 2) throw new Error(`Banco no formato v${db.version ?? 1}; esperado v2.`);
+  return migrate(db);
+}
+
+// --- Escolas e landing dos testes (dados anteriores a elas) ----------------------------------
+
+/** Id fixo: a migração roda a cada leitura até ser gravada, e precisa dar sempre o mesmo resultado. */
+export const DEFAULT_SCHOOL_ID = "escola-padrao";
+
+/** Conteúdo da antiga página inicial, que passou a ser a landing do teste das 12 habilidades. */
+const KAY12_LANDING: TestLanding = {
+  slug: "kay12",
+  published: true,
+  slogan: "habilidades fora da caixa",
+  headline: "Ver cada adolescente por inteiro, e por todos os ângulos.",
+  lead:
+    "O KAY12 acompanha as 12 habilidades socioemocionais de adolescentes ouvindo quem convive com eles: " +
+    "o próprio jovem, a família e o terapeuta. Um retrato 360 que vira conversa, plano e evolução.",
+  skillsTitle: "12 habilidades para a vida",
+  skillsLead: "Da relação consigo à relação com o mundo, cada uma medida com perguntas próprias.",
+  logoUrl: "/brand/wordmark.svg",
+  heroImageUrl: "/brand/mascote.webp",
+  contactUrl: "",
+};
+
+/**
+ * Coloca na escola padrão (com todos os testes) os terapeutas e pacientes cadastrados antes das escolas,
+ * e dá ao teste das 12 habilidades a landing que antes era a página inicial. Só acrescenta campos.
+ */
+function migrate(db: Db) {
+  db.schools ??= [];
+  db.invites ??= [];
+  const orphans = db.users.some((u) => u.role === "terapeuta" && !u.schoolId) || db.patients.some((p) => !p.schoolId);
+  if (orphans && !db.schools.some((s) => s.id === DEFAULT_SCHOOL_ID)) {
+    db.schools.push({
+      id: DEFAULT_SCHOOL_ID,
+      name: "Fora da Caixa",
+      testIds: db.tests.map((t) => t.id),
+      active: true,
+      createdAt: "2026-10-14T00:00:00.000Z",
+    });
+  }
+  for (const u of db.users) if (u.role === "terapeuta" && !u.schoolId) u.schoolId = DEFAULT_SCHOOL_ID;
+  const schoolOf = new Map(db.users.map((u) => [u.id, u.schoolId]));
+  for (const p of db.patients) p.schoolId ??= schoolOf.get(p.therapistId) ?? DEFAULT_SCHOOL_ID;
+  if (!db.tests.some((t) => t.landing?.slug === KAY12_LANDING.slug)) {
+    const kay = db.tests.find((t) => !t.landing && t.name === "12 habilidades fora da caixa");
+    if (kay) kay.landing = { ...KAY12_LANDING };
+  }
   return db;
 }
 
@@ -187,8 +237,7 @@ async function load(): Promise<Db> {
     await persist(fresh);
     return fresh;
   }
-  db.invites ??= [];
-  return db;
+  return migrate(db);
 }
 
 async function persist(db: Db) {

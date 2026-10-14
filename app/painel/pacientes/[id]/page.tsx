@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canSeePatient, requirePageUser } from "@/lib/auth";
+import { schoolOptions } from "@/lib/schools";
 import { readDb } from "@/lib/db";
 import { calibrate } from "@/lib/irt";
 import { ABOUT_LABEL, formProgress, GUARDIAN_LABEL, respondentName } from "@/lib/forms";
@@ -55,7 +56,8 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
           {years !== null && `${years} anos · `}
-          {p.guardians.length > 0 && `responsáveis: ${p.guardians.map((g) => g.name).join(", ")} · `}terapeuta {therapist?.name ?? "—"} · {test?.name ?? "teste removido"}
+          {p.guardians.length > 0 && `responsáveis: ${p.guardians.map((g) => g.name).join(", ")} · `}{user.role === "admin" && `${db.schools.find((s) => s.id === p.schoolId)?.name ?? "sem escola"} · `}terapeuta {therapist?.name ?? "—"} ·{" "}
+          {test?.name ?? "teste removido"}
         </p>
       </section>
 
@@ -83,11 +85,11 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               birthDate: p.birthDate,
               email: p.email,
               testId: p.testId,
+              schoolId: p.schoolId,
               therapistId: p.therapistId,
               guardians: p.guardians.map((g) => ({ id: g.id, kind: g.kind, name: g.name, email: g.email, phone: g.phone })),
             }}
-            tests={db.tests.filter((t) => t.active || t.id === p.testId).map((t) => ({ id: t.id, name: t.name }))}
-            therapists={db.users.filter((u) => u.active).map((u) => ({ id: u.id, name: u.name }))}
+            schools={schoolOptions(db, user, p)}
             isAdmin={user.role === "admin"}
             testLocked={forms.some((f) => Object.keys(f.answers).length > 0)}
           />

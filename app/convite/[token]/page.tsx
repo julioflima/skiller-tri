@@ -18,7 +18,13 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <p className="hand" style={{ margin: "0 0 20px" }}>habilidades fora da caixa</p>
         <div className="card">
           {invite ? (
-            <AcceptInviteForm token={token} email={invite.email} name={invite.name} role={invite.role} />
+            <AcceptInviteForm
+              token={token}
+              email={invite.email}
+              name={invite.name}
+              role={invite.role}
+              school={db.schools.find((s) => s.id === invite.schoolId)?.name}
+            />
           ) : (
             <>
               <h2>Convite indisponível</h2>

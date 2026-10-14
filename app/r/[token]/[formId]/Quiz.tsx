@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition, type CSSProperties } from "react";
 import { finishForm, saveAnswer } from "@/app/r/actions";
 
 export type QuizItem = {
@@ -40,7 +40,6 @@ export function Quiz({
   // Cronômetro da pergunta na tela: não conta o tempo com a aba escondida.
   const timer = useRef({ acc: 0, since: 0 as number | null });
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
     // começa a contar ao mostrar a pergunta; só desconta quando o navegador avisa que a aba foi escondida
     timer.current = { acc: 0, since: performance.now() };
   }, [index]);
@@ -114,8 +113,47 @@ export function Quiz({
     });
   }
 
+  // A pergunta nunca rola: se não couber na área disponível, o conteúdo inteiro é reduzido (zoom out).
+  const stageRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const el = fitRef.current;
+    if (!stage || !el) return;
+    function fit() {
+      if (!stage || !el) return;
+      const W = stage.clientWidth;
+      const H = stage.clientHeight;
+      const natural = (s: number) => {
+        el.style.width = `${W / s}px`;
+        el.style.height = "auto";
+        return el.offsetHeight;
+      };
+      // mais largo, o texto quebra menos linhas: busca a maior escala em que o conteúdo cabe
+      let s = 1;
+      if (natural(1) > H) {
+        let lo = 0.3;
+        let hi = 1;
+        for (let i = 0; i < 12; i++) {
+          const mid = (lo + hi) / 2;
+          if (natural(mid) * mid <= H) lo = mid;
+          else hi = mid;
+        }
+        s = lo;
+      }
+      el.style.width = `${W / s}px`;
+      el.style.height = `${H / s}px`;
+      el.style.transform = s < 1 ? `scale(${s})` : "";
+    }
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(stage);
+    document.fonts?.ready.then(fit);
+    return () => ro.disconnect();
+  }, [index, reviewing, error, pending]);
+
   return (
-    <div className="stack">
+    <div className="quiz-shell">
       <div className="row spread">
         <a href={`/r/${token}`} className="hand" style={{ textDecoration: "none" }}>
           olá, {name.split(" ")[0]}
@@ -128,6 +166,8 @@ export function Quiz({
         <span style={{ width: `${(done / items.length) * 100}%` }} />
       </div>
 
+      <div className="quiz-stage" ref={stageRef}>
+        <div className="quiz-fit" ref={fitRef}>
       {reviewing ? (
         <div className="card quiz-card">
           <h2>Tudo respondido</h2>
@@ -171,17 +211,22 @@ export function Quiz({
               })}
             </div>
             {error && <p className="error" style={{ marginTop: 14 }}>{error}</p>}
-            <div className="row spread" style={{ marginTop: 20 }}>
-              <button className="btn ghost sm" onClick={() => setIndex(index - 1)} disabled={index === 0}>
-                ← Anterior
-              </button>
-              <span className="faint kbd-hint">use as teclas 1–{item.options.length}</span>
-              <button className="btn ghost sm" onClick={() => setIndex(index + 1)} disabled={!(index in answers)}>
-                Próxima →
-              </button>
-            </div>
           </div>
         </>
+      )}
+        </div>
+      </div>
+
+      {!reviewing && (
+        <div className="row spread quiz-nav">
+          <button className="btn ghost sm" onClick={() => setIndex(index - 1)} disabled={index === 0}>
+            ← Anterior
+          </button>
+          <span className="faint kbd-hint">use as teclas 1–{item.options.length}</span>
+          <button className="btn ghost sm" onClick={() => setIndex(index + 1)} disabled={!(index in answers)}>
+            Próxima →
+          </button>
+        </div>
       )}
     </div>
   );

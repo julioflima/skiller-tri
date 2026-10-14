@@ -6,22 +6,32 @@ import { CopyLink } from "@/app/components/CopyLink";
 import { Icon } from "@/app/components/Icon";
 import { useToast } from "@/app/components/useToast";
 import { createInvite, renewInvite, revokeInvite } from "../invite-actions";
+import { SchoolSelect } from "./TeamManager";
 
-type PendingInvite = { id: string; token: string; email: string; name: string; role: "admin" | "terapeuta"; expiresAt: string; expired: boolean };
+type PendingInvite = {
+  id: string;
+  token: string;
+  email: string;
+  name: string;
+  role: "admin" | "terapeuta";
+  school?: string;
+  expiresAt: string;
+  expired: boolean;
+};
 
 /** Texto que acompanha o link ao copiar ou compartilhar (ex.: no WhatsApp). */
 function inviteMessage(i: PendingInvite) {
   const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
-  const papel = i.role === "admin" ? "administrador(a)" : "terapeuta";
+  const papel = i.role === "admin" ? "administrador(a)" : `terapeuta${i.school ? ` da escola ${i.school}` : ""}`;
   const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
   return `${ola} Você foi convidado(a) para entrar no KAY12 como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
-export function InviteSection({ invites }: { invites: PendingInvite[] }) {
+export function InviteSection({ invites, schools }: { invites: PendingInvite[]; schools: { id: string; name: string }[] }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ name: "", email: "", role: "admin" as "admin" | "terapeuta" });
+  const [form, setForm] = useState({ name: "", email: "", role: "terapeuta" as "admin" | "terapeuta", schoolId: schools.length === 1 ? schools[0].id : "" });
 
   function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>, onOk?: () => void) {
     start(async () => {
@@ -45,15 +55,16 @@ export function InviteSection({ invites }: { invites: PendingInvite[] }) {
         className="row tight"
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => createInvite(form), () => setForm({ name: "", email: "", role: form.role }));
+          run(() => createInvite(form), () => setForm({ ...form, name: "", email: "" }));
         }}
       >
         <input type="text" placeholder="Nome (opcional)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
         <input type="email" placeholder="E-mail (opcional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ flex: 2, minWidth: 200 }} />
         <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "terapeuta" })} aria-label="Papel" style={{ flex: 1, minWidth: 150 }}>
-          <option value="admin">Administrador</option>
           <option value="terapeuta">Terapeuta</option>
+          <option value="admin">Administrador</option>
         </select>
+        <SchoolSelect role={form.role} value={form.schoolId} schools={schools} onChange={(schoolId) => setForm({ ...form, schoolId })} />
         <button className="btn warm sm" disabled={pending}>
           {pending ? "Gerando…" : "Gerar link"}
         </button>
@@ -76,7 +87,7 @@ export function InviteSection({ invites }: { invites: PendingInvite[] }) {
                   <td>
                     {i.name && <strong>{i.name} </strong>}
                     <span className="small">{i.email || "qualquer e-mail"}</span>
-                    <div className="faint small">{i.role === "admin" ? "administrador" : "terapeuta"}</div>
+                    <div className="faint small">{i.role === "admin" ? "administrador" : `terapeuta · ${i.school ?? "sem escola"}`}</div>
                   </td>
                   <td style={{ maxWidth: 360 }}>{i.expired ? <span className="faint small">gere um novo link</span> : <CopyLink path={`/convite/${i.token}`} message={inviteMessage(i)} label={i.name || i.email || undefined} />}</td>
                   <td>

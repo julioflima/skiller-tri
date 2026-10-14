@@ -1,4 +1,4 @@
-/* ---------- landing (/) · identidade KAY12 ---------- */
+/* ---------- landings: plataforma (/) e testes (/teste/<slug>) ---------- */
 .lp {
   --k-orange: #e8692a;
   --k-navy: #1e2f4a;
@@ -191,6 +191,33 @@ body:has(.lp) .washes { display: none; }
 .lp-footer-logo { height: 34px; width: auto; }
 .lp-footer .hand { color: var(--k-sand); }
 .lp-footer .faint { margin-left: auto; color: rgba(255, 244, 228, 0.6); }
+
+/* ---------- plataforma e páginas de teste ---------- */
+.lp-wordmark { font: 700 1.6rem/1 var(--font-title); letter-spacing: -0.02em; color: var(--k-navy); }
+.lp-wordmark b { margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px; background: var(--k-orange); color: var(--k-cream); font-weight: 700; font-size: 0.8em; vertical-align: 2px; }
+.lp-wordmark.light { color: var(--k-cream); font-size: 1.3rem; }
+.lp-test-name { font: 600 1.35rem/1.1 var(--font-title); color: var(--k-navy); }
+.lp-test-name.light { color: var(--k-cream); }
+.lp-preview { margin: 0; padding: 8px 16px; text-align: center; background: var(--k-yellow); font-weight: 700; font-size: 0.9rem; }
+.lp-hero.solo { grid-template-columns: 1fr; }
+.lp-hero.solo h1 { max-width: 20ch; }
+
+.lp-hero-diagram { display: block; width: 100%; height: auto; max-width: 440px; margin: 0 auto; }
+.lp-diagram-label { font: 600 18px var(--font-title); fill: var(--k-navy); }
+.lp-diagram-label.light { fill: var(--k-cream); }
+.lp-diagram-label.small { font-size: 15px; }
+
+.lp-flow-top { margin-top: 12px; padding-top: 0; border-top: 0; }
+
+.lp-tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.lp-test-card { display: flex; flex-direction: column; gap: 12px; color: inherit; text-decoration: none; border-top: 6px solid var(--c); transition: transform 0.15s; }
+.lp-test-card:hover { transform: translateY(-3px); }
+.lp-test-logo { height: 34px; width: auto; align-self: flex-start; }
+.lp-test-meta { font-size: 0.88rem; font-weight: 700; color: var(--ink-faint); }
+.lp-test-go { margin-top: auto; font-weight: 800; color: var(--k-orange); }
+
+.lp-cta-solo { padding-bottom: 0; }
+.lp-footer-platform { display: inline-flex; align-items: center; gap: 8px; color: rgba(255, 244, 228, 0.78); text-decoration: none; font-size: 0.9rem; }
 
 @media (max-width: 860px) {
   .lp-hero { grid-template-columns: 1fr; gap: 16px; padding-top: 2vh; }

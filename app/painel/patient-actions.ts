@@ -12,6 +12,8 @@ export type PatientInput = {
   birthDate?: string;
   email?: string;
   testId: string;
+  /** Só o administrador escolhe; o terapeuta cadastra sempre na própria escola. */
+  schoolId?: string;
   therapistId?: string;
   guardians: GuardianInput[];
 };
@@ -27,10 +29,26 @@ function clean(input: PatientInput) {
   return { ...input, name, birthDate: input.birthDate || undefined, email: input.email?.trim() || undefined, guardians };
 }
 
-function getPatient(db: Db, user: Awaited<ReturnType<typeof requireUser>>, id: string) {
+type SessionUser = Awaited<ReturnType<typeof requireUser>>;
+
+function getPatient(db: Db, user: SessionUser, id: string) {
   const p = db.patients.find((x) => x.id === id);
   if (!p || !canSeePatient(user, p)) fail("Paciente não encontrado.");
   return p;
+}
+
+/** Escola, terapeuta e teste precisam combinar: o terapeuta é da escola e a escola aplica o teste. */
+function placement(db: Db, user: SessionUser, data: PatientInput, current?: Patient) {
+  const schoolId = user.role === "admin" ? (data.schoolId ?? current?.schoolId) : user.schoolId;
+  const school = db.schools.find((s) => s.id === schoolId);
+  if (!school || (!school.active && school.id !== current?.schoolId)) fail("Escolha uma escola ativa.");
+  const therapistId = user.role === "admin" ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
+  const therapist = db.users.find((u) => u.id === therapistId && u.active);
+  if (!therapist || therapist.schoolId !== school.id) fail(`Escolha um terapeuta da escola ${school.name}.`);
+  const testId = data.testId || current?.testId;
+  const test = db.tests.find((t) => t.id === testId && (t.active || t.id === current?.testId));
+  if (!test || !school.testIds.includes(test.id)) fail(`O teste escolhido não é aplicado na escola ${school.name}.`);
+  return { school, therapist, test };
 }
 
 function hasAnswers(db: Db, patientId: string, pred: (f: Db["forms"][number]) => boolean = () => true) {
@@ -42,17 +60,16 @@ export async function createPatient(input: PatientInput) {
     const user = await requireUser();
     const data = clean(input);
     const id = await updateDb((db) => {
-      const test = db.tests.find((t) => t.id === data.testId && t.active);
-      if (!test) fail("Escolha um teste ativo.");
-      const therapistId = user.role === "admin" ? data.therapistId : user.id;
-      if (!db.users.some((u) => u.id === therapistId && u.active)) fail("Escolha o terapeuta responsável.");
+      if (user.role !== "admin" && !user.schoolId) fail("Sua conta não está ligada a uma escola.");
+      const { school, therapist, test } = placement(db, user, data);
       const patient: Patient = {
         id: newId(),
         name: data.name,
         birthDate: data.birthDate,
         email: data.email,
         testId: test.id,
-        therapistId: therapistId!,
+        schoolId: school.id,
+        therapistId: therapist.id,
         guardians: data.guardians.map((g) => ({ id: newId(), kind: g.kind, name: g.name, email: g.email, phone: g.phone, token: newToken() })),
         token: newToken(),
         therapistToken: newToken(),
@@ -76,15 +93,13 @@ export async function updatePatient(id: string, input: PatientInput) {
       p.birthDate = data.birthDate;
       p.email = data.email;
 
-      if (user.role === "admin" && data.therapistId && data.therapistId !== p.therapistId) {
-        if (!db.users.some((u) => u.id === data.therapistId && u.active)) fail("Terapeuta inválido.");
-        p.therapistId = data.therapistId;
-      }
+      const { school, therapist, test } = placement(db, user, data, p);
+      p.schoolId = school.id;
+      p.therapistId = therapist.id;
 
-      if (data.testId !== p.testId) {
+      if (test.id !== p.testId) {
         if (hasAnswers(db, p.id)) fail("O teste não pode ser trocado depois que alguém já respondeu.");
-        if (!db.tests.some((t) => t.id === data.testId && t.active)) fail("Teste inválido.");
-        p.testId = data.testId;
+        p.testId = test.id;
         db.forms = db.forms.filter((f) => f.patientId !== p.id);
         db.sessions = db.sessions.filter((s) => s.patientId !== p.id);
       }

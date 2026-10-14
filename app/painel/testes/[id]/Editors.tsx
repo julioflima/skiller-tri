@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
-import type { About, Category, RespondentRole, Scale, Stage, StageRule } from "@/lib/types";
+import type { About, Category, RespondentRole, Scale, Stage, StageRule, TestLanding } from "@/lib/types";
 import {
   deleteCategory,
   deleteScale,
@@ -16,6 +16,7 @@ import {
   saveCategory,
   saveScale,
   saveStage,
+  saveLanding,
   setManualSymbol,
   updateTestMeta,
 } from "../../test-actions";
@@ -569,6 +570,82 @@ export function TestMetaEditor({
         >
           Excluir teste
         </button>
+      </div>
+    </section>
+  );
+}
+
+// ---------------- landing page ----------------
+
+const LANDING_FIELDS: { key: keyof TestLanding; label: string; hint?: string; long?: boolean }[] = [
+  { key: "slogan", label: "Frase acima do título", hint: "Opcional, em letra manuscrita." },
+  { key: "headline", label: "Título" },
+  { key: "lead", label: "Texto de abertura", long: true },
+  { key: "skillsTitle", label: "Título da seção das classificações", hint: "Vazio = \"N classificações\"." },
+  { key: "skillsLead", label: "Texto da seção das classificações", long: true },
+  { key: "logoUrl", label: "Logo", hint: "Caminho em /public (ex.: /brand/wordmark.svg) ou endereço https. Vazio = nome do teste." },
+  { key: "heroImageUrl", label: "Imagem de destaque", hint: "Opcional. Aparece ao lado do título e no convite final." },
+  { key: "contactUrl", label: "Contato do botão \"Falar com a equipe\"", hint: "https:// ou mailto:. Vazio = contato geral da plataforma." },
+];
+
+export function LandingEditor({ testId, landing, suggestedSlug }: { testId: string; landing?: TestLanding; suggestedSlug: string }) {
+  const { run, pending, toast } = useRunner();
+  const [f, setF] = useState<TestLanding>(
+    landing ?? {
+      slug: suggestedSlug,
+      published: false,
+      slogan: "",
+      headline: "",
+      lead: "",
+      skillsTitle: "",
+      skillsLead: "",
+      logoUrl: "",
+      heroImageUrl: "",
+      contactUrl: "",
+    },
+  );
+  const path = `/teste/${f.slug}`;
+  return (
+    <section className="card stack">
+      {toast.node}
+      <p className="muted small" style={{ margin: 0 }}>
+        Página pública do teste, para apresentá-lo a escolas e famílias. As classificações, quem responde e as etapas saem do próprio teste. Os
+        testes publicados também aparecem na página inicial da plataforma.
+      </p>
+      <div className="grid-2" style={{ gap: 14 }}>
+        <div>
+          <label htmlFor="lp-slug">Endereço</label>
+          <div className="row tight" style={{ gap: 6, flexWrap: "nowrap" }}>
+            <span className="faint">/teste/</span>
+            <input id="lp-slug" type="text" value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value.toLowerCase() })} />
+          </div>
+        </div>
+        <label className="small" style={{ fontWeight: 400, alignSelf: "end" }}>
+          <input type="checkbox" checked={f.published} onChange={(e) => setF({ ...f, published: e.target.checked })} /> Publicada (qualquer pessoa com o
+          endereço vê)
+        </label>
+      </div>
+      {LANDING_FIELDS.map(({ key, label, hint, long }) => (
+        <div key={key}>
+          <label htmlFor={`lp-${key}`}>{label}</label>
+          {long ? (
+            <textarea id={`lp-${key}`} value={String(f[key])} onChange={(e) => setF({ ...f, [key]: e.target.value })} />
+          ) : (
+            <input id={`lp-${key}`} type="text" value={String(f[key])} onChange={(e) => setF({ ...f, [key]: e.target.value })} />
+          )}
+          {hint && <p className="faint">{hint}</p>}
+        </div>
+      ))}
+      <div className="row">
+        <button className="btn" disabled={pending} onClick={() => run(() => saveLanding(testId, f))}>
+          Salvar
+        </button>
+        {landing && (
+          <a href={landing.published ? `/teste/${landing.slug}` : `/teste/${landing.slug}?previa=1`} target="_blank" rel="noreferrer" className="btn ghost sm">
+            {landing.published ? "Abrir página" : "Ver prévia"}
+          </a>
+        )}
+        {landing && landing.slug !== f.slug && <span className="faint">O endereço muda para {path} ao salvar.</span>}
       </div>
     </section>
   );

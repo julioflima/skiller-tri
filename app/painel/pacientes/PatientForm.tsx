@@ -8,19 +8,19 @@ import type { GuardianKind } from "@/lib/types";
 import { createPatient, updatePatient, type GuardianInput, type PatientInput } from "../patient-actions";
 
 type Option = { id: string; name: string };
+/** Escola com os testes que aplica e os terapeutas da equipe. O terapeuta recebe só a própria. */
+export type SchoolOption = Option & { tests: Option[]; therapists: Option[] };
 
 export function PatientForm({
   patientId,
   initial,
-  tests,
-  therapists,
+  schools,
   isAdmin,
   testLocked,
 }: {
   patientId?: string;
   initial?: PatientInput;
-  tests: Option[];
-  therapists: Option[];
+  schools: SchoolOption[];
   isAdmin: boolean;
   testLocked?: boolean;
 }) {
@@ -30,8 +30,9 @@ export function PatientForm({
   const [data, setData] = useState<PatientInput>(
     initial ?? {
       name: "",
-      testId: tests[0]?.id ?? "",
-      therapistId: therapists[0]?.id,
+      schoolId: schools[0]?.id,
+      testId: schools[0]?.tests[0]?.id ?? "",
+      therapistId: schools[0]?.therapists[0]?.id,
       guardians: [
         { kind: "mae", name: "" },
         { kind: "pai", name: "" },
@@ -39,6 +40,19 @@ export function PatientForm({
     },
   );
   const set = (patch: Partial<PatientInput>) => setData((d) => ({ ...d, ...patch }));
+  const school = schools.find((s) => s.id === data.schoolId) ?? schools[0];
+  const tests = school?.tests ?? [];
+  const therapists = school?.therapists ?? [];
+  // ao trocar de escola, mantém teste e terapeuta só se a nova escola também os tiver
+  const pickSchool = (id: string) => {
+    const next = schools.find((s) => s.id === id);
+    if (!next) return;
+    set({
+      schoolId: id,
+      testId: testLocked || next.tests.some((t) => t.id === data.testId) ? data.testId : (next.tests[0]?.id ?? ""),
+      therapistId: next.therapists.some((t) => t.id === data.therapistId) ? data.therapistId : next.therapists[0]?.id,
+    });
+  };
   const setGuardian = (i: number, patch: Partial<GuardianInput>) =>
     set({ guardians: data.guardians.map((g, j) => (j === i ? { ...g, ...patch } : g)) });
 
@@ -75,9 +89,22 @@ export function PatientForm({
             </label>
             <input id="p-email" type="email" value={data.email ?? ""} onChange={(e) => set({ email: e.target.value })} />
           </div>
+          {isAdmin && (
+            <div>
+              <label htmlFor="p-school">Escola</label>
+              <select id="p-school" value={school?.id ?? ""} onChange={(e) => pickSchool(e.target.value)}>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="p-test">Teste</label>
             <select id="p-test" value={data.testId} onChange={(e) => set({ testId: e.target.value })} disabled={testLocked}>
+              {!tests.some((t) => t.id === data.testId) && <option value={data.testId}>—</option>}
               {tests.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -90,6 +117,7 @@ export function PatientForm({
             <div>
               <label htmlFor="p-ther">Terapeuta responsável</label>
               <select id="p-ther" value={data.therapistId} onChange={(e) => set({ therapistId: e.target.value })}>
+                {!therapists.some((t) => t.id === data.therapistId) && <option value={data.therapistId ?? ""}>—</option>}
                 {therapists.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

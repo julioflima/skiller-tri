@@ -1,23 +1,27 @@
 import Link from "next/link";
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
+import { schoolOptions } from "@/lib/schools";
 import { PatientForm } from "../PatientForm";
 
 export default async function NewPatientPage() {
   const user = await requirePageUser();
   const db = await readDb();
-  const tests = db.tests.filter((t) => t.active).map((t) => ({ id: t.id, name: t.name }));
-  const therapists = db.users.filter((u) => u.active).map((u) => ({ id: u.id, name: u.name }));
+  const schools = schoolOptions(db, user).filter((s) => s.tests.length && s.therapists.length);
   return (
     <div className="stack">
       <Link href="/painel" className="faint">
         ← Pacientes
       </Link>
       <h1>Novo paciente</h1>
-      {tests.length ? (
-        <PatientForm tests={tests} therapists={therapists} isAdmin={user.role === "admin"} />
+      {schools.length ? (
+        <PatientForm schools={schools} isAdmin={user.role === "admin"} />
       ) : (
-        <p className="muted">Nenhum teste ativo. Um administrador precisa criar ou ativar um teste primeiro.</p>
+        <p className="muted">
+          {user.role === "admin"
+            ? "Nenhuma escola ativa com testes e terapeutas. Configure em Escolas e Equipe."
+            : "Sua escola ainda não aplica nenhum teste. Fale com a equipe da plataforma."}
+        </p>
       )}
     </div>
   );

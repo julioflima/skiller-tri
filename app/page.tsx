@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { currentUser } from "@/lib/auth";
-import { BrandMark } from "@/app/components/BrandMark";
+import { readDb } from "@/lib/db";
+import { Dots, LP_COLORS, PlatformWordmark } from "@/app/components/LandingParts";
 import "./landing.css";
 
 export const dynamic = "force-dynamic";
@@ -8,224 +10,198 @@ export const dynamic = "force-dynamic";
 // link do botão "Falar com a equipe" (mailto:, WhatsApp, formulário…); sem ele o botão some
 const CONTACT_URL = process.env.CONTACT_URL;
 
-// paleta KAY12 (definida em landing.css, só na landing)
-const COLORS = ["var(--k-orange)", "var(--k-teal)", "var(--k-purple)", "var(--k-yellow)", "var(--k-green)", "var(--k-navy)"];
-
-const SKILLS = [
-  "Pertencimento e vínculos",
-  "Autoconhecimento",
-  "Reconhecimento e expressão emocional",
-  "Autorregulação",
-  "Autonomia e autocuidado",
-  "Comunicação",
-  "Empatia e respeito às diferenças",
-  "Cooperação",
-  "Resolução de conflitos e responsabilidade",
-  "Criatividade e resolução de problemas",
-  "Tomada de decisão e liderança compartilhada",
-  "Responsabilidade e participação social",
-];
-
-// distâncias só ilustrativas: quanto mais perto do centro, mais desenvolvida a habilidade
-const DEMO = [0.42, 0.62, 0.8, 0.95, 0.5, 0.36, 0.58, 0.46, 0.88, 0.4, 0.72, 0.55];
-
-function Ecomap() {
-  const c = 200;
-  return (
-    <svg viewBox="0 0 400 400" className="lp-ecomap" role="img" aria-label="Exemplo ilustrativo de ecomapa com 12 habilidades ao redor do adolescente">
-      {[60, 110, 160].map((r) => (
-        <circle key={r} cx={c} cy={c} r={r} fill="none" stroke="var(--line)" strokeDasharray="3 6" />
-      ))}
-      {DEMO.map((d, i) => {
-        const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
-        const r = 40 + d * 130;
-        const x = c + Math.cos(a) * r;
-        const y = c + Math.sin(a) * r;
-        const color = COLORS[i % COLORS.length];
-        return (
-          <g key={i}>
-            <line x1={c} y1={c} x2={x} y2={y} stroke={color} strokeWidth={2.2 - d * 1.4} opacity={0.55} />
-            <circle cx={x} cy={y} r={15} fill={color} opacity={0.92} />
-            <text x={x} y={y + 4.5} textAnchor="middle" className="lp-ecomap-n">{i + 1}</text>
-          </g>
-        );
-      })}
-      <circle cx={c} cy={c} r={30} fill="var(--k-navy)" />
-      <text x={c} y={c + 5} textAnchor="middle" className="lp-ecomap-me">eu</text>
-    </svg>
-  );
-}
-
-/** assinatura da marca: os 4 pontos da camiseta do mascote */
-function Dots() {
-  return (
-    <span className="lp-dots" aria-hidden>
-      <i /><i /><i /><i />
-    </span>
-  );
-}
-
+/** Página inicial da plataforma: escolas que acompanham seus pacientes por meio de testes. Cada teste tem a própria landing. */
 export default async function Home() {
   const user = await currentUser();
   const enter = user ? { href: "/painel", label: "Ir para o painel" } : { href: "/entrar", label: "Entrar" };
+  const db = await readDb();
+  const tests = db.tests
+    .filter((t) => t.active && t.landing?.published)
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.landing!.slug,
+      logoUrl: t.landing!.logoUrl,
+      lead: t.landing!.headline || t.description,
+      categories: t.categories.length,
+      questions: t.questions.filter((q) => q.active).length,
+    }));
 
   return (
-    <main className="lp">
+    <main className="lp lp-platform">
       <header className="container topbar">
         <Link href="/" className="brand">
-          <BrandMark />
+          <PlatformWordmark />
         </Link>
         <nav className="row lp-nav">
-          <a href="#habilidades">Habilidades</a>
           <a href="#como-funciona">Como funciona</a>
-          <a href="#rigor">Rigor</a>
-          <Link href={enter.href} className="btn sm">{enter.label}</Link>
+          {tests.length > 0 && <a href="#testes">Testes</a>}
+          <a href="#escolas">Para escolas</a>
+          <Link href={enter.href} className="btn sm">
+            {enter.label}
+          </Link>
         </nav>
       </header>
 
       <section className="container lp-hero">
         <div>
-          <p className="hand lp-slogan">habilidades fora da caixa</p>
-          <h1>Ver cada adolescente por inteiro, e por todos os ângulos.</h1>
+          <p className="lp-kicker">Plataforma de acompanhamento</p>
+          <h1>Aprender e acompanhar, um teste de cada vez.</h1>
           <p className="lp-lead">
-            O KAY12 acompanha as 12 habilidades socioemocionais de adolescentes ouvindo quem convive com eles:
-            o próprio jovem, a família e o terapeuta. Um retrato 360 que vira conversa, plano e evolução.
+            O Skiller TRI reúne escolas que acompanham seus pacientes por meio de testes. Cada escola tem a própria equipe de terapeutas; cada
+            teste mede o que importa ouvindo quem convive com a pessoa, e mostra a evolução sessão a sessão.
           </p>
           <div className="row">
-            <a href="#contato" className="btn warm lg">Levar para minha escola</a>
-            <a href="#como-funciona" className="btn ghost lg">Como funciona</a>
+            <a href={tests.length ? "#testes" : "#escolas"} className="btn warm lg">
+              {tests.length ? "Conhecer os testes" : "Trazer minha escola"}
+            </a>
+            <a href="#como-funciona" className="btn ghost lg">
+              Como funciona
+            </a>
           </div>
-          <p className="faint lp-note">Uma ferramenta de triagem e acompanhamento. Não faz diagnóstico.</p>
         </div>
-        <div className="lp-mascot" aria-hidden>
-          <span className="lp-trail" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/mascote.webp" alt="" />
-        </div>
-      </section>
-
-      <section id="habilidades" className="container lp-section">
-        <p className="lp-kicker">O que a gente olha</p>
-        <h2>12 habilidades para a vida</h2>
-        <Dots />
-        <p className="muted lp-sub">Da relação consigo à relação com o mundo, cada uma medida com perguntas próprias.</p>
-        <div className="lp-skills-wrap">
-          <figure className="lp-card lp-ecomap-card">
-            <Ecomap />
-            <figcaption className="faint">Ecomapa: quanto mais perto do centro, mais desenvolvida a habilidade. Exemplo ilustrativo.</figcaption>
-          </figure>
-          <ol className="lp-skills">
-            {SKILLS.map((s, i) => (
-              <li key={s} style={{ "--c": COLORS[i % COLORS.length] } as React.CSSProperties}>
-                <span className="lp-skill-n">{i + 1}</span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <HeroDiagram />
       </section>
 
       <section id="como-funciona" className="lp-band lp-dark">
         <div className="container lp-section">
-          <p className="lp-kicker">Avaliação 360</p>
-          <h2>Três olhares sobre a mesma pessoa</h2>
+          <p className="lp-kicker">Como funciona</p>
+          <h2>Da escola ao resultado, cada um no seu lugar</h2>
           <Dots />
-          <div className="lp-steps">
-            <article className="lp-card">
-              <span className="lp-dot" style={{ background: "var(--k-teal)" }} />
-              <h3>O adolescente</h3>
-              <p className="muted">Responde sobre si e sobre o outro, num questionário curto, visual e sem senha, direto do celular.</p>
-            </article>
-            <article className="lp-card">
-              <span className="lp-dot" style={{ background: "var(--k-yellow)" }} />
-              <h3>A família</h3>
-              <p className="muted">Mãe e pai recebem cada um o próprio link. Funciona para qualquer formação familiar, com um ou mais responsáveis.</p>
-            </article>
-            <article className="lp-card">
-              <span className="lp-dot" style={{ background: "var(--k-purple)" }} />
-              <h3>O terapeuta</h3>
-              <p className="muted">Registra o que observa a cada sessão e cruza as visões num painel feito para a prática clínica e escolar.</p>
-            </article>
-          </div>
-
-          <div className="lp-flow">
+          <div className="lp-flow lp-flow-top">
             <div>
               <span className="lp-flow-n">1</span>
-              <h3>Início</h3>
-              <p>Uma avaliação de partida com o jovem e cada responsável.</p>
+              <h3>A plataforma cria os testes</h3>
+              <p>Perguntas, classificações, escalas e etapas, calibrados com Teoria de Resposta ao Item à medida que as respostas chegam.</p>
             </div>
             <div>
               <span className="lp-flow-n">2</span>
-              <h3>Sessões</h3>
-              <p>Poucas perguntas por encontro, sorteadas para não repetir e equilibrar as habilidades.</p>
+              <h3>A escola escolhe e aplica</h3>
+              <p>Cada escola entra com a sua equipe de terapeutas e escolhe quais testes aplica aos seus pacientes.</p>
             </div>
             <div>
               <span className="lp-flow-n">3</span>
-              <h3>Evolução</h3>
-              <p>Radar, ecomapa e linha do tempo mostram o que avançou e onde vale insistir.</p>
+              <h3>Todos respondem, o terapeuta acompanha</h3>
+              <p>Paciente e família respondem pelo celular, sem senha. O terapeuta vê os resultados dos seus pacientes e a evolução.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="rigor" className="container lp-section">
-        <p className="lp-kicker">Cuidado com o que se mede</p>
-        <h2>Leve para quem responde, sério para quem analisa</h2>
+      {tests.length > 0 && (
+        <section id="testes" className="container lp-section">
+          <p className="lp-kicker">Testes da plataforma</p>
+          <h2>Escolha o que acompanhar</h2>
+          <Dots />
+          <p className="muted lp-sub">Cada teste tem a sua página, com o que mede, quem responde e como funciona.</p>
+          <div className="lp-tests">
+            {tests.map((t, i) => (
+              <Link key={t.id} href={`/teste/${t.slug}`} className="lp-card lp-test-card" style={{ "--c": LP_COLORS[i % LP_COLORS.length] } as React.CSSProperties}>
+                {t.logoUrl ? <img src={t.logoUrl} alt={t.name} className="lp-test-logo" /> : <span className="lp-test-name">{t.name}</span>}
+                {t.lead && <p className="muted">{t.lead}</p>}
+                <p className="lp-test-meta">
+                  {t.categories} classificações · {t.questions} perguntas
+                </p>
+                <span className="lp-test-go">Conhecer o teste →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section id="escolas" className="container lp-section">
+        <p className="lp-kicker">Quem vê o quê</p>
+        <h2>Cada pessoa vê só o que é seu</h2>
         <Dots />
         <div className="lp-rigor">
           <div className="lp-card">
-            <h3>Menos viés nas respostas</h3>
-            <p className="muted">
-              Cada pergunta ganha um símbolo abstrato próprio. Quem responde nunca vê a habilidade avaliada nem o peso
-              das opções, e as perguntas se misturam e mudam entre as sessões.
-            </p>
+            <h3>A escola</h3>
+            <p className="muted">Monta a equipe de terapeutas e escolhe os testes. Os dados de uma escola nunca aparecem para outra.</p>
           </div>
           <div className="lp-card sand">
-            <h3>Medida com base estatística</h3>
+            <h3>O terapeuta</h3>
             <p className="muted">
-              Além do percentual, cada habilidade é estimada pela Teoria de Resposta ao Item (modelo Rasch), com margem
-              de erro e sinal de perguntas ambíguas para a equipe revisar.
+              Não acessa a plataforma: entra e encontra só os testes aplicados na sua escola, respondidos pelos seus pacientes.
             </p>
           </div>
           <div className="lp-card">
-            <h3>Dados no lugar certo</h3>
-            <p className="muted">
-              Cada pessoa vê só os próprios formulários. Grupos de perfis e análises comparativas ficam restritos à equipe
-              terapêutica.
-            </p>
+            <h3>Paciente e família</h3>
+            <p className="muted">Cada um recebe o próprio link e vê só os próprios formulários. Nada de comparação com outras pessoas.</p>
           </div>
         </div>
       </section>
 
       <section id="contato" className="container lp-section">
-        <div className="lp-cta">
+        <div className="lp-cta lp-cta-solo">
           <div className="lp-cta-text">
-            <p className="lp-kicker">Para escolas e terapeutas</p>
-            <h2>Quer usar o KAY12 com seus adolescentes?</h2>
-            <p>
-              Criado com a equipe Fora da Caixa e em fase piloto. Estamos abrindo espaço para escolas e clínicas parceiras
-              acompanharem seus grupos com a gente.
-            </p>
+            <p className="lp-kicker">Para escolas e clínicas</p>
+            <h2>Quer acompanhar seus pacientes com a gente?</h2>
+            <p>Estamos em fase piloto e abrindo espaço para escolas parceiras. A gente cadastra a sua escola, a sua equipe e os testes que fizerem sentido.</p>
             <div className="row">
               {CONTACT_URL && (
-                <a href={CONTACT_URL} className="btn lg lp-btn-light">Falar com a equipe</a>
+                <a href={CONTACT_URL} className="btn lg lp-btn-light">
+                  Falar com a equipe
+                </a>
               )}
-              <Link href={enter.href} className="btn ghost lg lp-btn-outline">{enter.label}</Link>
+              <Link href={enter.href} className="btn ghost lg lp-btn-outline">
+                {enter.label}
+              </Link>
             </div>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/mascote.webp" alt="" className="lp-cta-mascot" />
         </div>
       </section>
 
       <footer className="lp-band lp-dark lp-footer-band">
         <div className="container lp-footer">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/wordmark-creme.svg" alt="KAY12" className="lp-footer-logo" />
-          <span className="hand">habilidades fora da caixa</span>
+          <PlatformWordmark light />
           <span className="faint">Triagem e acompanhamento. Não substitui avaliação profissional.</span>
         </div>
       </footer>
     </main>
+  );
+}
+
+/** Escola → equipe → pacientes → testes, como uma árvore. Ilustrativo. */
+function HeroDiagram() {
+  const therapists = [110, 200, 290];
+  return (
+    <svg viewBox="0 0 400 400" className="lp-hero-diagram" role="img" aria-label="Uma escola, sua equipe de terapeutas e os pacientes de cada um respondendo testes">
+      <circle cx="200" cy="215" r="178" fill="var(--k-sand)" opacity="0.55" />
+      {therapists.map((x, i) => (
+        <g key={x}>
+          <path d={`M200 92 C200 130 ${x} 120 ${x} 168`} fill="none" stroke="var(--k-navy)" strokeWidth="2.5" opacity="0.5" />
+          {[-30, 0, 30].map((dx, j) => (
+            <path key={dx} d={`M${x} 196 C${x} 230 ${x + dx} 228 ${x + dx} 262`} fill="none" stroke={LP_COLORS[i]} strokeWidth="2" opacity="0.6" strokeDasharray={j === 1 ? "0" : "4 5"} />
+          ))}
+        </g>
+      ))}
+      <rect x="140" y="44" width="120" height="48" rx="24" fill="var(--k-navy)" />
+      <text x="200" y="74" textAnchor="middle" className="lp-diagram-label light">
+        escola
+      </text>
+      {therapists.map((x, i) => (
+        <g key={x}>
+          <circle cx={x} cy="182" r="22" fill={LP_COLORS[i]} />
+          <text x={x} y="187" textAnchor="middle" className="lp-diagram-label light small">
+            T{i + 1}
+          </text>
+          {[-30, 0, 30].map((dx) => (
+            <circle key={dx} cx={x + dx} cy="272" r="10" fill="#fffbf4" stroke={LP_COLORS[i]} strokeWidth="3" />
+          ))}
+        </g>
+      ))}
+      {[0, 1, 2].map((i) => (
+        <rect key={i} x={118 + i * 62} y="318" width="50" height="38" rx="8" fill="#fffbf4" stroke="var(--k-navy)" strokeWidth="2" opacity={1 - i * 0.2} />
+      ))}
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <rect x={127 + i * 62} y="330" width="32" height="5" rx="2.5" fill={LP_COLORS[i + 3]} />
+          <rect x={127 + i * 62} y="341" width="22" height="5" rx="2.5" fill="var(--line)" />
+        </g>
+      ))}
+      <text x="200" y="384" textAnchor="middle" className="lp-diagram-label">
+        testes
+      </text>
+    </svg>
   );
 }

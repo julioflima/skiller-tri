@@ -3,7 +3,19 @@
 import { useActionState, useState } from "react";
 import { acceptInvite } from "../actions";
 
-export function AcceptInviteForm({ token, email, name, role }: { token: string; email: string; name: string; role: "admin" | "terapeuta" }) {
+export function AcceptInviteForm({
+  token,
+  email,
+  name,
+  role,
+  school,
+}: {
+  token: string;
+  email: string;
+  name: string;
+  role: "admin" | "terapeuta";
+  school?: string;
+}) {
   const [state, action, pending] = useActionState(acceptInvite, { error: "" });
   // controlados: o React limpa os campos não controlados a cada envio, e eles devem sobreviver a um erro
   const [typedEmail, setTypedEmail] = useState("");
@@ -14,7 +26,7 @@ export function AcceptInviteForm({ token, email, name, role }: { token: string; 
       <div>
         <h2 style={{ marginBottom: 4 }}>Criar sua conta</h2>
         <p className="muted small" style={{ margin: 0 }}>
-          Você foi convidado como {role === "admin" ? "administrador" : "terapeuta"}.
+          {role === "admin" ? "Você foi convidado como administrador da plataforma." : `Você foi convidado como terapeuta${school ? ` da escola ${school}` : ""}.`}
         </p>
       </div>
       <div className="field">

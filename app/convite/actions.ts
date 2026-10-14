@@ -24,6 +24,9 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
     const email = inv.email || typedEmail;
     if (!EMAIL.test(email)) return { error: "E-mail inválido." };
     if (db.users.some((u) => u.email === email)) return { error: "Já existe uma conta com este e-mail. Entre pela tela inicial." };
+    if (inv.role === "terapeuta" && !db.schools.some((s) => s.id === inv.schoolId && s.active)) {
+      return { error: "A escola deste convite não está mais ativa. Peça um novo convite ao administrador." };
+    }
     const id = newId();
     db.users.push({
       id,
@@ -31,6 +34,7 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
       email,
       passwordHash,
       role: inv.role,
+      schoolId: inv.role === "terapeuta" ? inv.schoolId : undefined,
       active: true,
       createdAt: new Date().toISOString(),
       token: newToken(),
