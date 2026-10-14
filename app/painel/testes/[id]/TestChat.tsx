@@ -10,11 +10,11 @@ type RefKind = "pergunta" | "classificacao" | "escala" | "etapa";
 
 type Message = ChatTurn & { changes?: ChatReply["changes"]; error?: boolean; ai?: string };
 
-const TRIGGERS: Record<string, { kind: RefKind; name: string }> = {
-  "@": { kind: "pergunta", name: "pergunta" },
-  "#": { kind: "classificacao", name: "classificação" },
-  $: { kind: "escala", name: "escala" },
-  "!": { kind: "etapa", name: "etapa" },
+const TRIGGERS: Record<string, { kind: RefKind; name: string; example: string }> = {
+  "@": { kind: "pergunta", name: "pergunta", example: "reescreva @[Tenho amigos…] para o responsável" },
+  "#": { kind: "classificacao", name: "classificação", example: "crie 3 perguntas em #[Empatia]" },
+  $: { kind: "escala", name: "escala", example: "adicione a opção “Quase sempre” em $[Frequência]" },
+  "!": { kind: "etapa", name: "etapa", example: "sorteie 5 perguntas por pessoa em ![Sessão]" },
 };
 const SYMBOL_OF = Object.fromEntries(Object.entries(TRIGGERS).map(([sym, t]) => [t.kind, sym])) as Record<RefKind, string>;
 const TOKEN_RE = /([@#$!])\[([^\]]+)\]/g;
@@ -48,14 +48,14 @@ function expandRefs(text: string, refs: ChatRef[]) {
 }
 
 /** Mostra os itens citados como etiquetas na bolha da mensagem. */
-function withChips(text: string) {
+function withChips(text: string, className = "chat-chip") {
   const out: React.ReactNode[] = [];
   let last = 0;
   for (const m of text.matchAll(TOKEN_RE)) {
     out.push(text.slice(last, m.index));
     out.push(
-      <span key={m.index} className="chat-chip">
-        {m[1]} {m[2]}
+      <span key={m.index} className={className}>
+        {className === "chat-chip" ? `${m[1]} ${m[2]}` : m[0]}
       </span>,
     );
     last = m.index! + m[0].length;
@@ -80,6 +80,7 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
   const [pending, start] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   const [caret, setCaret] = useState(0);
   const [picked, setPicked] = useState(0);
   const [closedAt, setClosedAt] = useState<number | null>(null);
@@ -168,7 +169,6 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
       <section className="card chat">
         <p className="muted small">
           Peça alterações em linguagem natural: criar, reescrever ou desativar perguntas, ajustar escalas, classificações e etapas. As mudanças são aplicadas na hora.
-          Para citar um item, digite <b>@</b> pergunta, <b>#</b> classificação, <b>$</b> escala ou <b>!</b> etapa.
         </p>
         {!messages.length && (
           <div className="chat-suggestions">
@@ -237,10 +237,19 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
               )}
             </ul>
           )}
+          {/* camada atrás do textarea que pinta os itens citados como etiquetas */}
+          <div ref={mirrorRef} className="chat-mirror" aria-hidden>
+            {withChips(draft, "chat-mark")}
+            {"\u200b"}
+          </div>
           <textarea
             ref={inputRef}
-            placeholder="Ex.: reescreva @ para o responsável e mova para #"
+            className="chat-field"
+            placeholder="Escreva o pedido… use @ para citar uma pergunta, # classificação, $ escala, ! etapa"
             value={draft}
+            onScroll={(e) => {
+              if (mirrorRef.current) mirrorRef.current.scrollTop = e.currentTarget.scrollTop;
+            }}
             onChange={(e) => {
               setDraft(e.target.value);
               setCaret(e.target.selectionStart);
@@ -263,6 +272,19 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
                   return;
                 }
               }
+              // Backspace logo depois de um item citado apaga o item inteiro
+              if (e.key === "Backspace" && e.currentTarget.selectionStart === e.currentTarget.selectionEnd) {
+                const at = e.currentTarget.selectionStart;
+                const m = draft.slice(0, at).match(/[@#$!]\[[^\]]+\]$/);
+                if (m) {
+                  e.preventDefault();
+                  const pos = at - m[0].length;
+                  setDraft(draft.slice(0, pos) + draft.slice(at));
+                  setCaret(pos);
+                  requestAnimationFrame(() => inputRef.current?.setSelectionRange(pos, pos));
+                  return;
+                }
+              }
               if (open && e.key === "Escape") {
                 e.preventDefault();
                 setClosedAt(open.start);
@@ -276,10 +298,12 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
             rows={2}
           />
         </div>
-        <div className="row chat-symbols">
+        <div className="chat-symbols small">
+          <span className="faint">Citar itens do teste:</span>
           {Object.entries(TRIGGERS).map(([sym, t]) => (
-            <button key={sym} type="button" className="btn ghost sm" disabled={pending} onClick={() => insertSymbol(sym)}>
-              <b>{sym}</b> {t.name}
+            <button key={sym} type="button" className="chat-symbol" title={`ex.: ${t.example}`} disabled={pending} onClick={() => insertSymbol(sym)}>
+              <span className="chat-symbol-key">{sym}</span>
+              {t.name}
             </button>
           ))}
         </div>
