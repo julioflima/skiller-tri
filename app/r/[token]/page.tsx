@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { readDb } from "@/lib/db";
 import { formProgress } from "@/lib/forms";
 import { resolveToken } from "@/lib/portal";
+import { BrandMark } from "@/app/components/BrandMark";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
     <main className="container narrow page">
       <header className="topbar">
         <span className="brand">
-          <span className="brand-dot" /> Skiller
+          <BrandMark />
         </span>
       </header>
       <p className="hand" style={{ margin: 0 }}>{who.roleLabel.toLowerCase()}</p>

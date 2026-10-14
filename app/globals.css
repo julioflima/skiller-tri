@@ -109,13 +109,14 @@ a { color: var(--indigo); }
   align-items: center;
   gap: 10px;
 }
-.brand-dot {
-  width: 26px; height: 26px;
-  border-radius: 50% 44% 52% 48%;
-  background: radial-gradient(circle at 35% 35%, var(--sky), var(--indigo));
-  filter: url(#wc-edge);
-  opacity: 0.85;
+.brand-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px #e8692a;
 }
+.brand-avatar.lg { width: 56px; height: 56px; }
+.brand-wordmark { height: 28px; width: auto; display: block; }
+.brand-wordmark.lg { height: 42px; }
 
 /* ---------- cartões ---------- */
 .card {

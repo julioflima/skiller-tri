@@ -14,7 +14,7 @@ function inviteMessage(i: PendingInvite) {
   const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
   const papel = i.role === "admin" ? "administrador(a)" : "terapeuta";
   const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
-  return `${ola} Você foi convidado(a) para entrar no Skiller como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
+  return `${ola} Você foi convidado(a) para entrar no KAY12 como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
 export function InviteSection({ invites }: { invites: PendingInvite[] }) {

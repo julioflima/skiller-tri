@@ -24,7 +24,7 @@ export type ChatReply = { text: string; changes: { ok: boolean; label: string }[
 
 const MAX_STEPS = 15;
 
-const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma Skiller, usado por terapeutas.
+const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma KAY12, usado por terapeutas.
 Você conversa em português (Brasil) com a pessoa administradora e altera o teste usando as ferramentas disponíveis.
 
 Como o teste funciona:

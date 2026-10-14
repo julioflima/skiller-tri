@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requirePageUser } from "@/lib/auth";
 import { logout } from "@/app/auth-actions";
 import { NavLinks } from "./NavLinks";
+import { BrandMark } from "@/app/components/BrandMark";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function PainelLayout({ children }: { children: React.React
     <main className="container page" style={{ paddingTop: 0 }}>
       <header className="topbar">
         <Link href="/painel" className="brand">
-          <span className="brand-dot" /> Skiller
+          <BrandMark />
         </Link>
         <div className="row">
           <span className="faint">

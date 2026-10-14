@@ -7,7 +7,7 @@ const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
 
 export const metadata: Metadata = {
-  title: "Skiller · Habilidades fora da caixa",
+  title: "KAY12 · Habilidades fora da caixa",
   description: "Avaliação das 12 habilidades socioemocionais.",
 };
 

@@ -58,7 +58,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="skiller-${slug}-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "Content-Disposition": `attachment; filename="kay12-${slug}-${new Date().toISOString().slice(0, 10)}.csv"`,
     },
   });
 }
