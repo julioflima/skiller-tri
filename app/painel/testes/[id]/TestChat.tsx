@@ -298,14 +298,21 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
             rows={2}
           />
         </div>
-        <div className="chat-symbols small">
-          <span className="faint">Citar itens do teste:</span>
-          {Object.entries(TRIGGERS).map(([sym, t]) => (
-            <button key={sym} type="button" className="chat-symbol" title={`ex.: ${t.example}`} disabled={pending} onClick={() => insertSymbol(sym)}>
-              <span className="chat-symbol-key">{sym}</span>
-              {t.name}
-            </button>
-          ))}
+        <div className="chat-help">
+          <p className="small">
+            <b>Cite itens do teste com símbolos.</b> Digite o símbolo (ou clique nele) e escolha o item na lista que aparece; o assistente recebe exatamente o item escolhido.
+          </p>
+          <div className="chat-symbols">
+            {Object.entries(TRIGGERS).map(([sym, t]) => (
+              <button key={sym} type="button" className="chat-symbol" disabled={pending} onClick={() => insertSymbol(sym)}>
+                <span className="chat-symbol-key">{sym}</span>
+                <span>
+                  <b>{t.name}</b>
+                  <span className="small faint">ex.: {t.example}</span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="row spread">
           <button
