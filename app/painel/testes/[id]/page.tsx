@@ -37,7 +37,19 @@ export default async function TestPage({ params, searchParams }: { params: Promi
       </Link>
       <div className="row spread">
         <h1 style={{ margin: 0 }}>{test.name}</h1>
-        {test.active ? <span className="pill high">ativo</span> : <span className="pill">inativo</span>}
+        <div className="row">
+          {test.active ? <span className="pill high">ativo</span> : <span className="pill">inativo</span>}
+          {test.landing && (
+            <a
+              href={test.landing.published && test.active ? `/teste/${test.landing.slug}` : `/teste/${test.landing.slug}?previa=1`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn ghost sm"
+            >
+              Ver landing page ↗
+            </a>
+          )}
+        </div>
       </div>
       <Coverage test={test} />
       <nav className="tabs" style={{ marginBottom: 0 }}>

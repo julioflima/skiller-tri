@@ -17,6 +17,7 @@ import {
   saveScale,
   saveStage,
   saveLanding,
+  uploadLandingImage,
   setManualSymbol,
   updateTestMeta,
 } from "../../test-actions";
@@ -583,10 +584,70 @@ const LANDING_FIELDS: { key: keyof TestLanding; label: string; hint?: string; lo
   { key: "lead", label: "Texto de abertura", long: true },
   { key: "skillsTitle", label: "Título da seção das classificações", hint: "Vazio = \"N classificações\"." },
   { key: "skillsLead", label: "Texto da seção das classificações", long: true },
-  { key: "logoUrl", label: "Logo", hint: "Caminho em /public (ex.: /brand/wordmark.svg) ou endereço https. Vazio = nome do teste." },
-  { key: "heroImageUrl", label: "Imagem de destaque", hint: "Opcional. Aparece ao lado do título e no convite final." },
   { key: "contactUrl", label: "Contato do botão \"Falar com a equipe\"", hint: "https:// ou mailto:. Vazio = contato geral da plataforma." },
 ];
+
+/** Imagem da landing: enviada para a pasta do teste no storage; o endereço vai para o formulário e fica salvo com a landing. */
+function ImageField({
+  testId,
+  kind,
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  testId: string;
+  kind: "logo" | "destaque";
+  label: string;
+  hint: string;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const { pending, toast } = useRunner();
+  const [uploading, setUploading] = useState(false);
+  async function send(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    const form = new FormData();
+    form.set("file", file);
+    const res = await uploadLandingImage(testId, kind, form);
+    setUploading(false);
+    if (!res.ok) return toast.show(res.error);
+    onChange(res.data!.url);
+    toast.show(res.message ?? "Imagem enviada.");
+  }
+  return (
+    <div>
+      {toast.node}
+      <span className="field-label">{label}</span>
+      <div className="image-field">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {value ? <img src={value} alt="" /> : <span className="faint small">Sem imagem</span>}
+      </div>
+      <div className="row tight" style={{ gap: 6, marginTop: 8 }}>
+        <label className="btn ghost sm" style={{ display: "inline-flex", margin: 0, cursor: "pointer" }}>
+          {uploading ? "Enviando…" : value ? "Trocar" : "Enviar"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            hidden
+            disabled={uploading || pending}
+            onChange={(e) => {
+              send(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {value && (
+          <button type="button" className="btn ghost sm danger" onClick={() => onChange("")}>
+            Remover
+          </button>
+        )}
+      </div>
+      <p className="faint">{hint} PNG, JPG, WEBP ou SVG, até 3 MB.</p>
+    </div>
+  );
+}
 
 export function LandingEditor({ testId, landing, suggestedSlug }: { testId: string; landing?: TestLanding; suggestedSlug: string }) {
   const { run, pending, toast } = useRunner();
@@ -625,6 +686,17 @@ export function LandingEditor({ testId, landing, suggestedSlug }: { testId: stri
           endereço vê)
         </label>
       </div>
+      <div className="grid-2" style={{ gap: 14 }}>
+        <ImageField testId={testId} kind="logo" label="Logo" hint="Vazio = nome do teste em texto." value={f.logoUrl} onChange={(logoUrl) => setF({ ...f, logoUrl })} />
+        <ImageField
+          testId={testId}
+          kind="destaque"
+          label="Imagem de destaque"
+          hint="Opcional. Aparece ao lado do título e no convite final."
+          value={f.heroImageUrl}
+          onChange={(heroImageUrl) => setF({ ...f, heroImageUrl })}
+        />
+      </div>
       {LANDING_FIELDS.map(({ key, label, hint, long }) => (
         <div key={key}>
           <label htmlFor={`lp-${key}`}>{label}</label>
@@ -640,10 +712,12 @@ export function LandingEditor({ testId, landing, suggestedSlug }: { testId: stri
         <button className="btn" disabled={pending} onClick={() => run(() => saveLanding(testId, f))}>
           Salvar
         </button>
-        {landing && (
+        {landing ? (
           <a href={landing.published ? `/teste/${landing.slug}` : `/teste/${landing.slug}?previa=1`} target="_blank" rel="noreferrer" className="btn ghost sm">
-            {landing.published ? "Abrir página" : "Ver prévia"}
+            {landing.published ? "Ver landing page ↗" : "Ver prévia da landing ↗"}
           </a>
+        ) : (
+          <span className="faint">Salve para ver a landing page.</span>
         )}
         {landing && landing.slug !== f.slug && <span className="faint">O endereço muda para {path} ao salvar.</span>}
       </div>

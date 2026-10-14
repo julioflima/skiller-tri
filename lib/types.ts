@@ -94,7 +94,7 @@ export type TestLanding = {
   /** Título e texto da seção das classificações. Vazio = "N classificações". */
   skillsTitle: string;
   skillsLead: string;
-  /** Imagens da marca do teste (caminho em /public ou URL). Vazio = sem imagem. */
+  /** Imagens da marca do teste, enviadas para a pasta do teste no Blob (/arquivos/testes/<id>/landing/...). Vazio = sem imagem. */
   logoUrl: string;
   heroImageUrl: string;
   /** Destino do botão "Falar com a equipe". Vazio = CONTACT_URL. */

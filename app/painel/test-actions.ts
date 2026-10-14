@@ -2,6 +2,7 @@
 
 import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
+import { FILES_ROUTE, deleteLandingImage, landingFolder, saveLandingImage } from "@/lib/landing-files";
 import { fail, guard } from "@/lib/result";
 import { DEFAULT_SYMBOL_PROMPT, aiConfig, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
 import type { About, Db, RespondentRole, Scale, Stage, Test, TestLanding } from "@/lib/types";
@@ -112,8 +113,20 @@ export async function updateTestMeta(id: string, name: string, description: stri
 }
 
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
-/** Imagem da landing: arquivo de /public ou endereço https. */
-const IMAGE = /^(\/[\w./-]+|https:\/\/\S+)$/;
+/** Imagem da landing: enviada para a pasta do teste no Blob, ou um arquivo antigo de /public/brand. */
+const imageOk = (testId: string, url: string) => url.startsWith(`${FILES_ROUTE}${landingFolder(testId)}`) || /^\/brand\/[\w.-]+$/.test(url);
+
+/** Envia o logo ou a imagem de destaque da landing; o endereço só fica salvo quando a landing é salva. */
+export async function uploadLandingImage(testId: string, kind: "logo" | "destaque", form: FormData) {
+  return guard<{ url: string }>(async () => {
+    await admin();
+    const db = await readDb();
+    getTest(db, testId);
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.size) fail("Escolha uma imagem.");
+    return { message: "Imagem enviada. Salve a landing para usá-la.", data: { url: await saveLandingImage(testId, kind, file) } };
+  });
+}
 
 export async function saveLanding(id: string, input: TestLanding) {
   return guard(async () => {
@@ -121,13 +134,14 @@ export async function saveLanding(id: string, input: TestLanding) {
     const slug = input.slug.trim().toLowerCase();
     if (!SLUG.test(slug)) fail("O endereço usa só letras minúsculas, números e hífen (até 40).");
     const text = (v: string) => (v ?? "").trim();
-    for (const url of [input.logoUrl, input.heroImageUrl].map(text)) if (url && !IMAGE.test(url)) fail("Imagem inválida: use um caminho como /brand/logo.svg ou um endereço https.");
+    for (const url of [input.logoUrl, input.heroImageUrl].map(text)) if (url && !imageOk(id, url)) fail("Imagem inválida: envie a imagem pelo botão Enviar.");
     const contactUrl = text(input.contactUrl);
     if (contactUrl && !/^(https:\/\/|mailto:)\S+$/.test(contactUrl)) fail("O contato precisa começar com https:// ou mailto:.");
     if (input.published && !text(input.headline)) fail("Escreva o título antes de publicar.");
-    await updateDb((db) => {
+    const replaced = await updateDb((db) => {
       const t = getTest(db, id);
       if (db.tests.some((x) => x.id !== id && x.landing?.slug === slug)) fail("Outro teste já usa este endereço.");
+      const before = [t.landing?.logoUrl, t.landing?.heroImageUrl];
       t.landing = {
         slug,
         published: input.published,
@@ -140,7 +154,11 @@ export async function saveLanding(id: string, input: TestLanding) {
         heroImageUrl: text(input.heroImageUrl),
         contactUrl,
       };
+      const now = [t.landing.logoUrl, t.landing.heroImageUrl];
+      return before.filter((u) => u && !now.includes(u));
     });
+    // imagens trocadas ou removidas saem da pasta do teste no Blob
+    await Promise.all(replaced.map(deleteLandingImage));
     return input.published ? "Landing publicada." : "Landing salva (não publicada).";
   });
 }

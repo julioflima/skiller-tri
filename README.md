@@ -44,7 +44,10 @@ Marca, mascote e slogan de um teste não aparecem fora da landing dele.
 
 ## Landing dos testes
 
-Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. As classificações, quem
+Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. O logo e a imagem de
+destaque são enviados pelo botão *Enviar* para a pasta do teste no Vercel Blob (`testes/<id>/landing/`, store privado) e servidos
+por `/arquivos/...`; imagens trocadas ou removidas são apagadas ao salvar. *Ver landing page* (no topo do teste) abre a página ou a
+prévia do rascunho. As classificações, quem
 responde e as etapas saem do próprio teste. Testes ativos e publicados aparecem na página inicial da plataforma. O botão
 "Falar com a equipe" da página inicial aponta para `CONTACT_URL` e some sem ela.
 
