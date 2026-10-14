@@ -57,7 +57,7 @@ export function TestChat({ testId, hasKey }: { testId: string; hasKey: boolean }
   if (!hasKey) {
     return (
       <section className="card">
-        <p className="muted">Cadastre a chave da API em Configurações para usar o assistente.</p>
+        <p className="muted">Defina ANTHROPIC_API_KEY no servidor para usar o assistente.</p>
       </section>
     );
   }

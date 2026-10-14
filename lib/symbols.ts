@@ -77,11 +77,12 @@ export function svgDataUri(svg: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/** Credenciais da IA: as cadastradas no admin têm prioridade sobre as variáveis de ambiente. */
-export function aiCredentials(settings: { anthropicApiKey?: string; anthropicWorkspaceId?: string }) {
+/** Configuração da IA, lida só das variáveis de ambiente do servidor. */
+export function aiConfig() {
   return {
-    apiKey: settings.anthropicApiKey || process.env.ANTHROPIC_API_KEY || "",
-    workspaceId: settings.anthropicWorkspaceId || process.env.ANTHROPIC_WORKSPACE_ID || undefined,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    workspaceId: process.env.ANTHROPIC_WORKSPACE_ID || undefined,
+    model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
   };
 }
 
@@ -92,7 +93,7 @@ export function aiErrorMessage(e: unknown): string {
     if (e.status === 429) return "Limite de uso da API atingido. Tente novamente em instantes.";
     const detail = (e.error as { error?: { message?: string } } | undefined)?.error?.message;
     if (detail?.includes("anthropic-workspace-id")) {
-      return "Esta chave não está vinculada a um workspace: informe o ID do workspace em Configurações (ou use uma chave de workspace).";
+      return "Esta chave não está vinculada a um workspace: defina ANTHROPIC_WORKSPACE_ID no servidor (ou use uma chave de workspace).";
     }
     return `Erro da API (${e.status ?? "sem status"}): ${detail ?? e.message}`;
   }

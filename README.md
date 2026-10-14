@@ -16,7 +16,6 @@ terapeutas que aplica alguns testes da plataforma; cada **teste** tem a própria
 | `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
 | `/painel/escolas` | admin | Escolas: nome, situação e quais testes cada uma aplica. |
 | `/painel/equipe` | admin | Cadastro de terapeutas (sempre de uma escola) e administradores (direto ou por convite). |
-| `/painel/configuracoes` | admin | Chave da API de IA, modelo e instruções para os símbolos. |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
 ## Escolas e papéis
@@ -114,7 +113,7 @@ Sem `ADMIN_EMAIL`/`ADMIN_PASSWORD`. **Troque antes de publicar.**
 
 ### Símbolos com IA
 
-Cadastre a chave da Anthropic em *Configurações* (ou use `ANTHROPIC_API_KEY`). Depois, em *Testes → Perguntas*, use
+Defina a chave da Anthropic em `ANTHROPIC_API_KEY` (modelo opcional em `ANTHROPIC_MODEL`). Depois, em *Testes → Perguntas*, use
 **Gerar símbolos faltantes** ou o botão ✦ de cada pergunta. O SVG devolvido é validado (sem scripts, links ou texto)
 e exibido sempre como `<img>`.
 

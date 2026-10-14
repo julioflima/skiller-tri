@@ -3,7 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
 import { fail, guard } from "@/lib/result";
-import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
+import { DEFAULT_SYMBOL_PROMPT, aiConfig, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
 import type { About, Db, RespondentRole, Scale, Stage, Test, TestLanding } from "@/lib/types";
 
 const ROLES: RespondentRole[] = ["paciente", "responsavel", "terapeuta"];
@@ -388,11 +388,11 @@ export async function generateScaleSymbols(testId: string, scaleId: string) {
     const t = getTest(db, testId);
     const scale = t.scales.find((x) => x.id === scaleId);
     if (!scale) fail("Escala não encontrada.");
-    const { apiKey, workspaceId } = aiCredentials(db.settings);
-    if (!apiKey) fail("Cadastre a chave da API em Configurações.");
+    const { apiKey, workspaceId, model } = aiConfig();
+    if (!apiKey) fail("Defina ANTHROPIC_API_KEY no servidor.");
     let svgs: string[];
     try {
-      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model: db.settings.model, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
+      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
     } catch (e) {
       fail(aiErrorMessage(e));
     }

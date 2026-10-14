@@ -261,7 +261,7 @@ function ScaleCard({
             type="button"
             className="btn sage sm"
             disabled={!hasKey || pending}
-            title={hasKey ? "Gera os símbolos de todas as respostas desta escala" : "Cadastre a chave em Configurações"}
+            title={hasKey ? "Gera os símbolos de todas as respostas desta escala" : "Defina ANTHROPIC_API_KEY no servidor"}
             onClick={() => run(() => generateScaleSymbols(testId, s.id))}
           >
             {pending ? "Gerando…" : "✦ Gerar símbolos com IA"}

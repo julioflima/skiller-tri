@@ -5,7 +5,6 @@ import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
 import type { Db } from "@/lib/types";
-import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, generateScaleSymbolsWithAI, svgDataUri } from "@/lib/symbols";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -127,43 +126,5 @@ export async function regenerateTherapistLink() {
       if (u) u.token = newToken();
     });
     return "Novo link gerado.";
-  });
-}
-
-export async function saveSettings(input: { apiKey: string; clearKey: boolean; workspaceId: string; model: string }) {
-  return guard(async () => {
-    await requireUser({ admin: true });
-    await updateDb((db) => {
-      const s = db.settings;
-      if (input.clearKey) delete s.anthropicApiKey;
-      else if (input.apiKey.trim()) s.anthropicApiKey = input.apiKey.trim();
-      if (input.workspaceId.trim()) s.anthropicWorkspaceId = input.workspaceId.trim();
-      else delete s.anthropicWorkspaceId;
-      s.model = input.model.trim() || s.model;
-    });
-    return "Configurações salvas.";
-  });
-}
-
-export async function testApiKey() {
-  return guard<{ srcs: string[] }>(async () => {
-    await requireUser({ admin: true });
-    const db = await readDb();
-    const { apiKey, workspaceId } = aiCredentials(db.settings);
-    if (!apiKey) fail("Nenhuma chave cadastrada.");
-    let svgs: string[];
-    try {
-      svgs = await generateScaleSymbolsWithAI({
-        apiKey,
-        workspaceId,
-        model: db.settings.model,
-        instructions: DEFAULT_SYMBOL_PROMPT,
-        scaleName: "Teste de configuração",
-        options: ["Nunca", "Às vezes", "Sempre"].map((label) => ({ label, description: "" })),
-      });
-    } catch (e) {
-      fail(aiErrorMessage(e));
-    }
-    return { message: "Chave funcionando.", data: { srcs: svgs.map(svgDataUri) } };
   });
 }

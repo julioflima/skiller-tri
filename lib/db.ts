@@ -125,7 +125,6 @@ export async function ensureEnvAdmin() {
 async function buildInitialDb(): Promise<Db> {
   return {
     version: 2,
-    settings: { model: "claude-opus-5-5" },
     schools: [],
     users: [await adminUser(process.env.ADMIN_EMAIL || "", process.env.ADMIN_PASSWORD || "admin")],
     invites: [],
@@ -145,7 +144,6 @@ const usePostgres = () => Boolean(process.env.DATABASE_URL);
 /** Db com as listas vazias: diz ao lib/db-prisma.ts quais chaves são coleções. */
 const EMPTY: Db = {
   version: 2,
-  settings: { model: "claude-opus-5-5" },
   schools: [],
   users: [],
   invites: [],

@@ -218,16 +218,8 @@ export type Form = {
   finishedAt?: string;
 };
 
-export type Settings = {
-  anthropicApiKey?: string;
-  /** Necessário quando a chave não está vinculada a um workspace (cabeçalho anthropic-workspace-id). */
-  anthropicWorkspaceId?: string;
-  model: string;
-};
-
 export type Db = {
   version: 2;
-  settings: Settings;
   schools: School[];
   users: User[];
   invites: Invite[];

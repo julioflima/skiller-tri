@@ -5,7 +5,7 @@ import { prisma } from "./prisma";
 /**
  * Armazenamento do Db no Postgres, independente do formato de lib/types.ts:
  * - cada chave do Db cujo valor é uma lista de objetos com `id` vira uma coleção (uma linha por item);
- * - as demais chaves (version, settings…) ficam na coleção "_meta", com a chave como id.
+ * - as demais chaves (version…) ficam na coleção "_meta", com a chave como id.
  * Feito para o lib/db.ts manter readDb()/updateDb() trocando só load()/persist().
  */
 type Doc = Record<string, unknown>;

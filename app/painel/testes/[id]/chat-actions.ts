@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { fail, guard, type Result } from "@/lib/result";
-import { aiCredentials, aiErrorMessage } from "@/lib/symbols";
+import { aiConfig, aiErrorMessage } from "@/lib/symbols";
 import type { Scale, Stage, Test } from "@/lib/types";
 import {
   deleteCategory,
@@ -243,10 +243,9 @@ async function runTool(testId: string, name: string, input: Input): Promise<{ re
 export async function chatWithTest(testId: string, history: ChatTurn[]) {
   return guard<ChatReply>(async () => {
     await requireUser({ admin: true });
-    const db = await readDb();
     const test = await loadTest(testId);
-    const { apiKey, workspaceId } = aiCredentials(db.settings);
-    if (!apiKey) fail("Cadastre a chave da API em Configurações.");
+    const { apiKey, workspaceId, model } = aiConfig();
+    if (!apiKey) fail("Defina ANTHROPIC_API_KEY no servidor.");
     const turns = history.filter((m) => m.text.trim()).slice(-30);
     if (turns.at(-1)?.role !== "user") fail("Escreva uma mensagem.");
 
@@ -262,7 +261,7 @@ export async function chatWithTest(testId: string, history: ChatTurn[]) {
       let response: Anthropic.Beta.BetaMessage;
       try {
         response = await client.beta.messages.create({
-          model: db.settings.model,
+          model,
           max_tokens: 16000,
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",

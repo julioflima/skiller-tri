@@ -22,7 +22,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
   if (!test) notFound();
 
   const used = new Set(db.forms.filter((f) => f.testId === test.id).flatMap((f) => f.items.map((i) => i.questionId)));
-  const hasKey = Boolean(db.settings.anthropicApiKey || process.env.ANTHROPIC_API_KEY);
+  const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const categories = [...test.categories].sort((a, b) => a.order - b.order);
   const tab = (key: string, label: string) => (
     <Link href={`/painel/testes/${test.id}?aba=${key}`} className={`tab${aba === key ? " active" : ""}`}>

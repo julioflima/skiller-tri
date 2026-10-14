@@ -18,7 +18,6 @@ export default async function PainelLayout({ children }: { children: React.React
           { href: "/painel/testes", label: "Testes" },
           { href: "/painel/escolas", label: "Escolas" },
           { href: "/painel/equipe", label: "Equipe" },
-          { href: "/painel/configuracoes", label: "Configurações" },
         ]
       : []),
     { href: "/painel/conta", label: "Minha conta" },
