@@ -77,12 +77,11 @@ export function svgDataUri(svg: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/** Configuração da IA, lida só das variáveis de ambiente do servidor. */
+/** Credenciais da IA, lidas só das variáveis de ambiente do servidor. O modelo fica em cada chamada. */
 export function aiConfig() {
   return {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
     workspaceId: process.env.ANTHROPIC_WORKSPACE_ID || undefined,
-    model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
   };
 }
 

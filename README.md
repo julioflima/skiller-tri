@@ -113,7 +113,7 @@ Sem `ADMIN_EMAIL`/`ADMIN_PASSWORD`. **Troque antes de publicar.**
 
 ### Símbolos com IA
 
-Defina a chave da Anthropic em `ANTHROPIC_API_KEY` (modelo opcional em `ANTHROPIC_MODEL`). Depois, em *Testes → Perguntas*, use
+Defina a chave da Anthropic em `ANTHROPIC_API_KEY`. Depois, em *Testes → Perguntas*, use
 **Gerar símbolos faltantes** ou o botão ✦ de cada pergunta. O SVG devolvido é validado (sem scripts, links ou texto)
 e exibido sempre como `<img>`.
 

@@ -35,6 +35,8 @@ function move<T extends { id: string; order: number }>(list: T[], id: string, di
 }
 
 const admin = () => requireUser({ admin: true });
+/** Símbolos são SVGs simples: o Sonnet em esforço baixo resolve bem pela metade do preço do Opus. */
+const SYMBOL_MODEL = "claude-sonnet-5-5";
 
 // ---------- testes ----------
 
@@ -388,11 +390,11 @@ export async function generateScaleSymbols(testId: string, scaleId: string) {
     const t = getTest(db, testId);
     const scale = t.scales.find((x) => x.id === scaleId);
     if (!scale) fail("Escala não encontrada.");
-    const { apiKey, workspaceId, model } = aiConfig();
+    const { apiKey, workspaceId } = aiConfig();
     if (!apiKey) fail("Defina ANTHROPIC_API_KEY no servidor.");
     let svgs: string[];
     try {
-      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
+      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model: SYMBOL_MODEL, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
     } catch (e) {
       fail(aiErrorMessage(e));
     }

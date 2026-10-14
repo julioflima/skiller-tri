@@ -23,8 +23,10 @@ export type ChatTurn = { role: "user" | "assistant"; text: string };
 export type ChatReply = { text: string; changes: { ok: boolean; label: string }[] };
 
 const MAX_STEPS = 15;
+/** Edita o teste em várias etapas com ferramentas: precisa do raciocínio do Opus. */
+const MODEL = "claude-opus-5-5";
 
-const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma KAY12, usado por terapeutas.
+const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma Skiller TRI, usado por terapeutas.
 Você conversa em português (Brasil) com a pessoa administradora e altera o teste usando as ferramentas disponíveis.
 
 Como o teste funciona:
@@ -244,7 +246,7 @@ export async function chatWithTest(testId: string, history: ChatTurn[]) {
   return guard<ChatReply>(async () => {
     await requireUser({ admin: true });
     const test = await loadTest(testId);
-    const { apiKey, workspaceId, model } = aiConfig();
+    const { apiKey, workspaceId } = aiConfig();
     if (!apiKey) fail("Defina ANTHROPIC_API_KEY no servidor.");
     const turns = history.filter((m) => m.text.trim()).slice(-30);
     if (turns.at(-1)?.role !== "user") fail("Escreva uma mensagem.");
@@ -261,7 +263,7 @@ export async function chatWithTest(testId: string, history: ChatTurn[]) {
       let response: Anthropic.Beta.BetaMessage;
       try {
         response = await client.beta.messages.create({
-          model,
+          model: MODEL,
           max_tokens: 16000,
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",
