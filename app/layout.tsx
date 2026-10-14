@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Caveat, Fraunces, Nunito } from "next/font/google";
+import { Caveat, Fraunces, Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", weight: ["400", "600", "700"] });
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
+const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "KAY12 · Habilidades fora da caixa",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${fraunces.variable} ${nunito.variable} ${caveat.variable}`}>
+    <html lang="pt-BR" className={`${fraunces.variable} ${nunito.variable} ${caveat.variable} ${fredoka.variable}`}>
       <body>
         {/* filtros SVG que dão a borda irregular de aquarela */}
         <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
