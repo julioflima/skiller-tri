@@ -1,6 +1,6 @@
 "use server";
 
-import { canSeePatient, picksTherapist, requireUser } from "@/lib/auth";
+import { canSeePatient, managesPatients, requireUser } from "@/lib/auth";
 import { newId, newToken, updateDb } from "@/lib/db";
 import { buildForms, ensureInitialForms } from "@/lib/forms";
 import { fail, guard } from "@/lib/result";
@@ -42,7 +42,7 @@ function placement(db: Db, user: SessionUser, data: PatientInput, current?: Pati
   const schoolId = user.role === "admin" ? (data.schoolId ?? current?.schoolId) : user.schoolId;
   const school = db.schools.find((s) => s.id === schoolId);
   if (!school || (!school.active && school.id !== current?.schoolId)) fail("Escolha uma escola ativa.");
-  const therapistId = picksTherapist(user) ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
+  const therapistId = managesPatients(user) ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
   // administrador não é terapeuta: o responsável é sempre um terapeuta ativo da escola
   const therapist = db.users.find((u) => u.id === therapistId && u.active && u.role === "terapeuta");
   if (!therapist || therapist.schoolId !== school.id) fail(`Escolha um terapeuta da escola ${school.name}.`);
@@ -58,7 +58,7 @@ function hasAnswers(db: Db, patientId: string, pred: (f: Db["forms"][number]) =>
 
 export async function createPatient(input: PatientInput) {
   return guard<{ id: string }>(async () => {
-    const user = await requireUser();
+    const user = await requireUser({ manager: true });
     const data = clean(input);
     const id = await updateDb((db) => {
       if (user.role !== "admin" && !user.schoolId) fail("Sua conta não está ligada a uma escola.");
@@ -86,7 +86,7 @@ export async function createPatient(input: PatientInput) {
 
 export async function updatePatient(id: string, input: PatientInput) {
   return guard(async () => {
-    const user = await requireUser();
+    const user = await requireUser({ manager: true });
     const data = clean(input);
     return updateDb((db) => {
       const p = getPatient(db, user, id);
@@ -125,7 +125,7 @@ export async function updatePatient(id: string, input: PatientInput) {
 
 export async function setArchived(id: string, archived: boolean) {
   return guard(async () => {
-    const user = await requireUser();
+    const user = await requireUser({ manager: true });
     await updateDb((db) => {
       getPatient(db, user, id).archived = archived;
     });
@@ -148,6 +148,8 @@ export async function regenerateLink(id: string, who: string) {
     const user = await requireUser();
     await updateDb((db) => {
       const p = getPatient(db, user, id);
+      // o terapeuta só renova o próprio link; os de paciente e família são do administrador da escola
+      if (who !== "terapeuta" && !managesPatients(user)) fail("Apenas o administrador da escola pode fazer isso.");
       if (who === "paciente") p.token = newToken();
       else if (who === "terapeuta") p.therapistToken = newToken();
       else {

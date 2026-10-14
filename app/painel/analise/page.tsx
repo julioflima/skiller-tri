@@ -117,7 +117,7 @@ export default async function AnalysisPage({ searchParams }: { searchParams: Pro
       <section>
         <h1 style={{ marginBottom: 6 }}>Análise</h1>
         <p className="muted" style={{ margin: 0 }}>
-          Relações entre habilidades e grupos de perfis{user.role === "admin" ? "" : " dos seus pacientes"}. Visível só para a equipe: os grupos não são
+          Relações entre habilidades e grupos de perfis{user.role === "admin" ? "" : user.role === "gestor" ? " dos pacientes da escola" : " dos seus pacientes"}. Visível só para a equipe: os grupos não são
           mostrados a pacientes e famílias, para evitar comparações.
         </p>
       </section>

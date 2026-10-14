@@ -3,7 +3,7 @@ import type { Db, Patient } from "./types";
 
 /**
  * Escolas que aparecem no cadastro de paciente, cada uma com os testes que aplica e a equipe.
- * O administrador vê as ativas; o terapeuta, só a própria. Num paciente existente, os valores atuais sempre aparecem.
+ * O dono vê as ativas; quem é da escola, só a própria. Num paciente existente, os valores atuais sempre aparecem.
  */
 export function schoolOptions(db: Db, user: SessionUser, current?: Patient) {
   const schools = db.schools.filter((s) =>

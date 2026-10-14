@@ -2,10 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { InviteSection } from "../../equipe/InviteSection";
-import { MembersTable, NewMemberForm } from "../../equipe/TeamManager";
-import { SchoolSettings } from "../SchoolEditor";
+import { TeamSection } from "../../equipe/TeamSection";
 import { impersonate } from "../../impersonate-actions";
+import { SchoolSettings } from "../SchoolEditor";
 
 export default async function SchoolPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
   const me = await requirePageUser({ admin: true });
@@ -16,28 +15,10 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
   // escola recém-criada, sem testes, abre no que falta configurar
   const { aba = school.testIds.length ? "pacientes" : "dados" } = await searchParams;
 
-  const now = new Date();
   const users = new Map(db.users.map((u) => [u.id, u]));
   const tests = new Map(db.tests.map((t) => [t.id, t]));
-  const schoolOptions = db.schools.filter((s) => s.active || s.id === school.id).map((s) => ({ id: s.id, name: s.name }));
   const patients = db.patients.filter((p) => p.schoolId === school.id && !p.archived).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-  const members = db.users
-    .filter((u) => u.schoolId === school.id)
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, "pt-BR"))
-    .map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      schoolId: u.schoolId,
-      school: school.name,
-      active: u.active,
-      patients: patients.filter((p) => p.therapistId === u.id).length,
-    }));
-  const invites = db.invites
-    .filter((i) => !i.acceptedAt && i.schoolId === school.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((i) => ({ id: i.id, token: i.token, email: i.email, name: i.name, role: i.role, school: school.name, expiresAt: i.expiresAt, expired: new Date(i.expiresAt) < now }));
+  const team = db.users.filter((u) => u.role !== "admin" && u.schoolId === school.id && u.active).length;
 
   const tab = (key: string, label: string) => (
     <Link href={`/painel/escolas/${school.id}?aba=${key}`} className={`tab${aba === key ? " active" : ""}`}>
@@ -61,7 +42,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
       </div>
       <nav className="tabs" style={{ marginBottom: 0 }}>
         {tab("pacientes", `Pacientes (${patients.length})`)}
-        {tab("equipe", `Equipe (${members.filter((m) => m.active).length})`)}
+        {tab("equipe", `Equipe (${team})`)}
         {tab("dados", "Dados e testes")}
       </nav>
 
@@ -124,11 +105,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
           )}
         </section>
       ) : (
-        <>
-          <MembersTable title="Terapeutas" members={members} meId={me.id} schools={schoolOptions} canImpersonate />
-          <NewMemberForm school={{ id: school.id, name: school.name }} />
-          <InviteSection invites={invites} school={{ id: school.id, name: school.name }} />
-        </>
+        <TeamSection db={db} school={school} me={me} />
       )}
     </div>
   );

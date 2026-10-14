@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ROLE_LABEL, type Role } from "@/lib/roles";
 import { acceptInvite } from "../actions";
 
 export function AcceptInviteForm({
@@ -13,7 +14,7 @@ export function AcceptInviteForm({
   token: string;
   email: string;
   name: string;
-  role: "admin" | "terapeuta";
+  role: Role;
   school?: string;
 }) {
   const [state, action, pending] = useActionState(acceptInvite, { error: "" });
@@ -26,7 +27,7 @@ export function AcceptInviteForm({
       <div>
         <h2 style={{ marginBottom: 4 }}>Criar sua conta</h2>
         <p className="muted small" style={{ margin: 0 }}>
-          {role === "admin" ? "Você foi convidado como administrador da plataforma." : `Você foi convidado como terapeuta${school ? ` da escola ${school}` : ""}.`}
+          {role === "admin" ? "Você foi convidado como dono da plataforma." : `Você foi convidado como ${ROLE_LABEL[role]}${school ? ` da escola ${school}` : ""}.`}
         </p>
       </div>
       <div className="field">

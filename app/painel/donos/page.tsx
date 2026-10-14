@@ -3,12 +3,11 @@ import { readDb } from "@/lib/db";
 import { InviteSection } from "../equipe/InviteSection";
 import { MembersTable } from "../equipe/TeamManager";
 
-/** Equipe da plataforma. Terapeutas são cadastrados dentro da escola (Escolas → escola → Equipe). */
-export default async function AdminsPage() {
+/** Donos do Skiller TRI. Terapeutas e administradores de escola ficam dentro de cada escola (Escolas → escola → Equipe). */
+export default async function OwnersPage() {
   const me = await requirePageUser({ admin: true });
   const db = await readDb();
   const now = new Date();
-  const schools = db.schools.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }));
   const invites = db.invites
     .filter((i) => !i.acceptedAt && i.role === "admin")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -20,13 +19,13 @@ export default async function AdminsPage() {
 
   return (
     <div className="stack">
-      <h1 style={{ margin: 0 }}>Administradores</h1>
+      <h1 style={{ margin: 0 }}>Donos</h1>
       <p className="muted" style={{ margin: 0 }}>
-        Administradores são a equipe da plataforma: veem todas as escolas, configuram os testes e cadastram escolas. Terapeutas pertencem a uma
-        escola e são cadastrados dentro dela, em Escolas.
+        Os donos são do Skiller TRI: criam os testes e as escolas, veem todas elas e podem ver o painel como qualquer escola ou pessoa. Terapeutas e
+        administradores de escola são cadastrados dentro de cada escola.
       </p>
       <InviteSection invites={invites} />
-      <MembersTable title="Administradores" members={members} meId={me.id} schools={schools} />
+      <MembersTable title="Donos" members={members} meId={me.id} />
     </div>
   );
 }

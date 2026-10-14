@@ -109,11 +109,11 @@ a { color: var(--indigo); }
   align-items: center;
   gap: 10px;
 }
-.wordmark { font: 700 1.45rem/1 var(--font-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
-.wordmark b { margin-left: 5px; padding: 2px 8px 3px; border-radius: 999px; background: var(--indigo); color: var(--paper); font: 700 0.62em/1 var(--font-body); letter-spacing: 0.08em; vertical-align: 4px; }
-.wordmark.lg { font-size: 2.1rem; }
-.wordmark.light { color: var(--paper); }
-.wordmark.light b { background: var(--terracotta); }
+/* logo da plataforma, igual ao da landing (Fredoka, azul-marinho, selo laranja) */
+.wordmark { font: 700 1.6rem/1 var(--font-fredoka), var(--font-body); letter-spacing: -0.02em; color: #1e2f4a; white-space: nowrap; }
+.wordmark b { margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px; background: #e8692a; color: #fff4e4; font-weight: 700; font-size: 0.8em; vertical-align: 2px; }
+.wordmark.lg { font-size: 2.2rem; }
+.wordmark.light { color: #fff4e4; }
 .brand-slogan { font-size: 1.15rem; font-weight: 400; margin-left: 4px; }
 @media (max-width: 520px) { .brand-slogan { display: none; } }
 

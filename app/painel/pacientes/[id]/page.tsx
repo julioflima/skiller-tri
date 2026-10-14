@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { canSeePatient, picksTherapist, requirePageUser } from "@/lib/auth";
+import { canSeePatient, managesPatients, requirePageUser } from "@/lib/auth";
 import { schoolOptions } from "@/lib/schools";
 import { readDb } from "@/lib/db";
 import { calibrate } from "@/lib/irt";
@@ -38,6 +38,8 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
   const forms = db.forms.filter((f) => f.patientId === p.id);
   const sessions = db.sessions.filter((s) => s.patientId === p.id).sort((a, b) => b.number - a.number);
   const years = age(p.birthDate);
+  // o terapeuta só responde e analisa: sem cadastro, e só com o próprio link
+  const manager = managesPatients(user);
   const tab = (key: string, label: string) => (
     <Link href={`/painel/pacientes/${p.id}?aba=${key}`} className={`tab${aba === key ? " active" : ""}`}>
       {label}
@@ -46,8 +48,9 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="stack">
-      <Link href="/painel" className="faint no-print">
-        ← Pacientes
+      {/* o administrador volta aos pacientes da escola do paciente */}
+      <Link href={user.role === "admin" ? `/painel/escolas/${p.schoolId}?aba=pacientes` : "/painel"} className="faint no-print">
+        ← {user.role === "admin" ? `Pacientes da ${db.schools.find((s) => s.id === p.schoolId)?.name ?? "escola"}` : "Pacientes"}
       </Link>
       <section>
         <div className="row spread">
@@ -64,7 +67,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
       <nav className="tabs no-print" style={{ marginBottom: 0 }}>
         {tab("geral", "Acompanhamento")}
         {tab("resultados", "Resultados")}
-        {tab("dados", "Cadastro")}
+        {manager && tab("dados", "Cadastro")}
       </nav>
 
       {aba === "resultados" && test ? (
@@ -76,7 +79,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
           visao={visao}
           calibration={calibrate(test, db.forms.filter((f) => f.testId === test.id))}
         />
-      ) : aba === "dados" ? (
+      ) : aba === "dados" && manager ? (
         <>
           <PatientForm
             patientId={p.id}
@@ -90,7 +93,8 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               guardians: p.guardians.map((g) => ({ id: g.id, kind: g.kind, name: g.name, email: g.email, phone: g.phone })),
             }}
             schools={schoolOptions(db, user, p)}
-            isAdmin={user.role === "admin"} picksTherapist={picksTherapist(user)}
+            isAdmin={user.role === "admin"}
+            picksTherapist
             testLocked={forms.some((f) => Object.keys(f.answers).length > 0)}
           />
           <div className="card alt row spread">
@@ -109,8 +113,12 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               <table className="table links-table">
                 <tbody>
                   {[
-                    { key: "paciente", who: `${p.name}`, role: "Paciente", token: p.token },
-                    ...p.guardians.map((g) => ({ key: g.id, who: g.name, role: GUARDIAN_LABEL[g.kind], token: g.token })),
+                    ...(manager
+                      ? [
+                          { key: "paciente", who: `${p.name}`, role: "Paciente", token: p.token },
+                          ...p.guardians.map((g) => ({ key: g.id, who: g.name, role: GUARDIAN_LABEL[g.kind], token: g.token })),
+                        ]
+                      : []),
                     { key: "terapeuta", who: therapist?.name ?? "Terapeuta", role: "Terapeuta", token: p.therapistToken },
                   ].map((l) => (
                     <tr key={l.key}>

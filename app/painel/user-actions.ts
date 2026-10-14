@@ -1,6 +1,7 @@
 "use server";
 
-import { requireRealUser, requireUser } from "@/lib/auth";
+import { canManageTeam, requireRealUser, requireUser } from "@/lib/auth";
+import { isSchoolRole, ROLE_LABEL, type Role } from "@/lib/roles";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
@@ -12,16 +13,24 @@ function checkPassword(pw: string) {
   if (pw.length < 8) fail("A senha precisa ter pelo menos 8 caracteres.");
 }
 
-/** Terapeuta precisa de uma escola existente; administrador é da plataforma e fica sem escola. */
-function schoolFor(db: Db, role: "admin" | "terapeuta", schoolId?: string) {
+/** Terapeuta e administrador da escola precisam de uma escola existente; o dono é da plataforma e fica sem escola. */
+function schoolFor(db: Db, role: Role, schoolId?: string) {
   if (role === "admin") return undefined;
-  if (!db.schools.some((s) => s.id === schoolId)) fail("Escolha a escola do terapeuta.");
+  if (!db.schools.some((s) => s.id === schoolId)) fail("Escolha a escola.");
   return schoolId;
 }
 
-export async function createUser(input: { name: string; email: string; password: string; role: "admin" | "terapeuta"; schoolId?: string }) {
+const roleOf = (role: string): Role => (role === "admin" ? "admin" : isSchoolRole(role) ? role : "terapeuta");
+
+/** O administrador da escola só cadastra e edita pessoas da própria escola, e nunca donos. */
+function checkTeamAccess(me: Parameters<typeof canManageTeam>[0], role: Role, schoolId?: string) {
+  if (role === "admin" ? me.role !== "admin" : !canManageTeam(me, schoolId)) fail("Você não pode mexer na equipe desta escola.");
+}
+
+export async function createUser(input: { name: string; email: string; password: string; role: Role; schoolId?: string }) {
   return guard(async () => {
-    await requireUser({ admin: true });
+    const me = await requireUser({ manager: true });
+    checkTeamAccess(me, roleOf(input.role), input.schoolId);
     const name = input.name.trim();
     const email = input.email.trim().toLowerCase();
     if (!name) fail("Informe o nome.");
@@ -30,7 +39,7 @@ export async function createUser(input: { name: string; email: string; password:
     const passwordHash = await hashPassword(input.password);
     await updateDb((db) => {
       if (db.users.some((u) => u.email === email)) fail("Já existe alguém com este e-mail.");
-      const role = input.role === "admin" ? "admin" : "terapeuta";
+      const role = roleOf(input.role);
       db.users.push({
         id: newId(),
         name,
@@ -43,13 +52,14 @@ export async function createUser(input: { name: string; email: string; password:
         token: newToken(),
       });
     });
-    return input.role === "admin" ? "Administrador cadastrado." : "Terapeuta cadastrado.";
+    const label = ROLE_LABEL[roleOf(input.role)];
+    return `${label[0].toUpperCase()}${label.slice(1)} cadastrado.`;
   });
 }
 
-export async function updateUser(id: string, input: { name: string; email: string; role: "admin" | "terapeuta"; schoolId?: string; active: boolean }) {
+export async function updateUser(id: string, input: { name: string; email: string; role: Role; schoolId?: string; active: boolean }) {
   return guard(async () => {
-    const me = await requireUser({ admin: true });
+    const me = await requireUser({ manager: true });
     const email = input.email.trim().toLowerCase();
     if (!input.name.trim()) fail("Informe o nome.");
     if (!EMAIL.test(email)) fail("E-mail inválido.");
@@ -57,16 +67,20 @@ export async function updateUser(id: string, input: { name: string; email: strin
       const u = db.users.find((x) => x.id === id);
       if (!u) fail("Usuário não encontrado.");
       if (db.users.some((x) => x.email === email && x.id !== id)) fail("Já existe alguém com este e-mail.");
-      if (u.id === me.id && (!input.active || input.role !== "admin")) fail("Você não pode desativar nem rebaixar a própria conta.");
-      const role = input.role === "admin" ? "admin" : "terapeuta";
+      const role = roleOf(input.role);
+      // dono continua dono; pessoas da escola alternam entre terapeuta e administrador da escola
+      if ((u.role === "admin") !== (role === "admin")) fail("O dono é da plataforma: não vira papel de escola, e vice-versa.");
+      checkTeamAccess(me, u.role, u.schoolId);
+      checkTeamAccess(me, role, input.schoolId);
+      if (u.id === me.id && (!input.active || role !== u.role)) fail("Você não pode desativar nem mudar o papel da própria conta.");
       const schoolId = schoolFor(db, role, input.schoolId);
-      if (role === "admin" && u.role === "terapeuta") {
+      if (u.role === "terapeuta" && role !== "terapeuta") {
         const n = db.patients.filter((p) => p.therapistId === u.id && !p.archived).length;
-        if (n) fail(`${u.name} acompanha ${n} paciente(s). Administrador não é terapeuta: passe-os a outro terapeuta antes.`);
+        if (n) fail(`${u.name} acompanha ${n} paciente(s). Só terapeuta acompanha paciente: passe-os a outro terapeuta antes.`);
       }
       if (schoolId !== u.schoolId) {
         const n = db.patients.filter((p) => p.therapistId === u.id && p.schoolId === u.schoolId && !p.archived).length;
-        if (n && u.role === "terapeuta") fail(`${u.name} acompanha ${n} paciente(s) na escola atual. Passe-os a outro terapeuta antes de trocar de escola.`);
+        if (n) fail(`${u.name} acompanha ${n} paciente(s) na escola atual. Passe-os a outro terapeuta antes de trocar de escola.`);
       }
       u.name = input.name.trim();
       u.email = email;
@@ -81,12 +95,13 @@ export async function updateUser(id: string, input: { name: string; email: strin
 
 export async function resetUserPassword(id: string, password: string) {
   return guard(async () => {
-    await requireUser({ admin: true });
+    const me = await requireUser({ manager: true });
     checkPassword(password);
     const passwordHash = await hashPassword(password);
     await updateDb((db) => {
       const u = db.users.find((x) => x.id === id);
       if (!u) fail("Usuário não encontrado.");
+      checkTeamAccess(me, u.role, u.schoolId);
       u.passwordHash = passwordHash;
     });
     return "Senha redefinida.";

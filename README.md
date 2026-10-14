@@ -12,21 +12,25 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/` | público | Landing da plataforma, com os testes publicados. |
 | `/teste/<endereço>` | público | Landing de um teste (ex.: `/teste/kay12`). Rascunho: `?previa=1`, só para admin. |
 | `/entrar` | equipe | Login com e-mail e senha. |
-| `/painel` | terapeuta e admin | Pacientes e famílias, links individuais, sessões, resultados e exportação CSV. O terapeuta vê só os próprios pacientes, na sua escola. |
-| `/painel/analise` | terapeuta e admin | Correlação entre classificações, grupos de perfis, calibração TRI e tempo de resposta por pergunta. O terapeuta vê só os testes da escola e os próprios pacientes. |
-| `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
-| `/painel/escolas` | admin | Escolas: nome, situação e quais testes cada uma aplica. |
-| `/painel/equipe` | admin | Cadastro de terapeutas (sempre de uma escola) e administradores (direto ou por convite). |
+| `/painel` | escola | Pacientes da escola (administrador) ou os próprios (terapeuta): sessões, resultados e CSV. O dono vai para Escolas. |
+| `/painel/analise` | todos | Correlação entre classificações, grupos de perfis, calibração TRI e tempo de resposta por pergunta, no escopo de cada um. |
+| `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
+| `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Equipe e Dados e testes. |
+| `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
+| `/painel/donos` | dono | Donos da plataforma (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
 ## Escolas e papéis
 
-- **Administrador**: equipe da plataforma. Não pertence a escola, vê tudo, cria testes, escolas e contas.
-- **Terapeuta**: membro de uma escola. Não acessa a plataforma: vê só os pacientes que acompanha, na sua escola, nos testes que
-  ela aplica (`canSeePatient` e `testsFor` em `lib/auth.ts`).
-- **Escola**: equipe de terapeutas + lista de testes aplicados. Todo paciente pertence a uma escola, e o terapeuta e o teste dele
-  precisam ser dessa escola. Um teste em uso por pacientes da escola não pode ser retirado dela; um terapeuta com pacientes não
-  troca de escola sem antes passá-los a outro terapeuta.
+- **Dono** (`admin`): do Skiller TRI. Não pertence a escola; cria testes, escolas e convida outros donos. Vê os pacientes dentro de
+  cada escola (não há lista global) e pode **ver como** uma escola inteira ou qualquer pessoa dela (seletor no cabeçalho ou botões na
+  página da escola), com uma faixa para voltar. A própria conta e a senha continuam sendo as dele.
+- **Administrador da escola** (`gestor`): cadastra e edita pacientes, escolhe o terapeuta, gera os links e cuida da equipe da própria
+  escola (*Equipe*). Não é terapeuta de paciente.
+- **Terapeuta**: só responde os testes e faz a análise dos próprios pacientes (resultados, sessões, anotações e o próprio link).
+  Não cadastra pacientes nem gerencia equipe.
+- **Escola**: equipe (terapeutas e administradores) + lista de testes aplicados. Todo paciente pertence a uma escola, e o terapeuta e
+  o teste dele precisam ser dessa escola. Permissões em `lib/auth.ts` (`canSeePatient`, `managesPatients`, `canManageTeam`, `testsFor`).
 
 ## Identidade visual
 

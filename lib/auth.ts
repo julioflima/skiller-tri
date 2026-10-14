@@ -6,7 +6,7 @@ import { readDb } from "./db";
 import type { Db, User } from "./types";
 
 const COOKIE = "st_session";
-// "ver como": o administrador navega como uma escola ou um terapeuta (valor assinado `escola:<id>` ou `terapeuta:<id>`)
+// "ver como": o dono navega como uma escola ou uma pessoa dela (valor assinado `escola:<id>` ou `usuario:<id>`)
 const AS_COOKIE = "st_as";
 const MAX_AGE = 60 * 60 * 12; // 12 horas
 
@@ -41,7 +41,7 @@ export async function endSession() {
   jar.delete(AS_COOKIE);
 }
 
-export type Impersonation = { kind: "escola" | "terapeuta"; id: string };
+export type Impersonation = { kind: "escola" | "usuario"; id: string };
 
 export async function startImpersonation(target: Impersonation) {
   const value = `${target.kind}:${target.id}`;
@@ -59,9 +59,9 @@ export async function endImpersonation() {
 }
 
 export type SessionUser = Omit<User, "passwordHash"> & {
-  /** "escola": visão da escola inteira (todos os pacientes e terapeutas dela), só via "ver como". */
+  /** "escola": a escola inteira vista pelo dono, com os poderes de administrador da escola. */
   scope?: "escola";
-  /** Administrador que está vendo como esta escola ou terapeuta. */
+  /** Dono que está vendo como esta escola ou pessoa. */
   impersonator?: { id: string; name: string };
 };
 
@@ -82,7 +82,7 @@ export async function realUser(): Promise<SessionUser | null> {
   return user ? strip(user) : null;
 }
 
-/** Usuário efetivo: o próprio, ou a escola/terapeuta que o administrador está vendo. */
+/** Usuário efetivo: o próprio, ou a escola/pessoa que o dono está vendo. */
 export async function currentUser(): Promise<SessionUser | null> {
   const real = await realUser();
   if (real?.role !== "admin") return real;
@@ -92,23 +92,32 @@ export async function currentUser(): Promise<SessionUser | null> {
   const [kind, id] = raw.slice(0, cut).split(":");
   const db = await readDb();
   const impersonator = { id: real.id, name: real.name };
-  if (kind === "terapeuta") {
-    const t = db.users.find((u) => u.id === id && u.active && u.role === "terapeuta");
+  if (kind === "usuario") {
+    const t = db.users.find((u) => u.id === id && u.active && u.role !== "admin");
     return t ? { ...strip(t), impersonator } : real;
   }
   if (kind === "escola") {
     const school = db.schools.find((s) => s.id === id);
     if (!school) return real;
-    return { id: `escola:${school.id}`, name: school.name, email: "", role: "terapeuta", schoolId: school.id, active: true, createdAt: school.createdAt, token: "", scope: "escola", impersonator };
+    return { id: `escola:${school.id}`, name: school.name, email: "", role: "gestor", schoolId: school.id, active: true, createdAt: school.createdAt, token: "", scope: "escola", impersonator };
   }
   return real;
 }
 
+type Need = { admin?: boolean; manager?: boolean };
+
+/** `admin`: só o dono; `manager`: dono ou administrador da escola. */
+function allowed(user: SessionUser, opts?: Need) {
+  if (opts?.admin) return user.role === "admin";
+  if (opts?.manager) return managesPatients(user);
+  return true;
+}
+
 /** Para páginas: redireciona ao login se não houver sessão. */
-export async function requirePageUser(opts?: { admin?: boolean }) {
+export async function requirePageUser(opts?: Need) {
   const user = await currentUser();
   if (!user) redirect("/entrar");
-  if (opts?.admin && user.role !== "admin") redirect("/painel");
+  if (!allowed(user, opts)) redirect("/painel");
   return user;
 }
 
@@ -120,29 +129,38 @@ export async function requireRealUser() {
 }
 
 /** Para ações: lança erro se não houver permissão. */
-export async function requireUser(opts?: { admin?: boolean }) {
+export async function requireUser(opts?: Need) {
   const user = await currentUser();
   if (!user) throw new Error("Sessão expirada. Entre novamente.");
-  if (opts?.admin && user.role !== "admin") throw new Error("Apenas administradores podem fazer isso.");
+  if (!allowed(user, opts)) throw new Error(opts?.admin ? "Apenas o dono da plataforma pode fazer isso." : "Apenas o administrador da escola pode fazer isso.");
   return user;
 }
 
-/** Escolhe o terapeuta do paciente: o administrador e a visão de escola; o terapeuta é sempre ele mesmo. */
-export function picksTherapist(user: SessionUser) {
-  return user.role === "admin" || user.scope === "escola";
+/**
+ * Cadastra e edita pacientes, escolhe o terapeuta e gera links: o dono e o administrador da escola.
+ * O terapeuta só responde os testes e analisa os próprios pacientes.
+ */
+export function managesPatients(user: SessionUser) {
+  return user.role === "admin" || user.role === "gestor";
+}
+
+/** Mexe na equipe de `schoolId` (sem escola = donos): o dono em qualquer uma; o administrador da escola só na própria. */
+export function canManageTeam(user: SessionUser, schoolId?: string) {
+  if (user.role === "admin") return true;
+  return user.role === "gestor" && !!schoolId && user.schoolId === schoolId;
 }
 
 /**
- * O administrador (equipe da plataforma) vê tudo; a visão de escola, todos os pacientes da escola. O terapeuta não acessa a plataforma: só os testes aplicados
- * na sua escola pelos seus pacientes.
+ * O dono vê tudo; o administrador da escola, todos os pacientes da escola. O terapeuta não acessa a plataforma:
+ * só os testes aplicados na sua escola pelos seus pacientes.
  */
 export function canSeePatient(user: SessionUser, patient: { therapistId: string; schoolId: string }) {
   if (user.role === "admin") return true;
-  if (user.scope === "escola") return patient.schoolId === user.schoolId;
+  if (user.role === "gestor") return !!user.schoolId && patient.schoolId === user.schoolId;
   return patient.therapistId === user.id && !!user.schoolId && patient.schoolId === user.schoolId;
 }
 
-/** Testes que o usuário pode aplicar: todos para o administrador; os da escola (ativa) para o terapeuta. */
+/** Testes que o usuário pode aplicar: todos para o dono; os da escola (ativa) para quem é da escola. */
 export function testsFor(db: Db, user: SessionUser) {
   if (user.role === "admin") return db.tests;
   const school = db.schools.find((s) => s.id === user.schoolId && s.active);

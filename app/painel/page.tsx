@@ -1,22 +1,19 @@
 import Link from "next/link";
-import { canSeePatient, picksTherapist, requirePageUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { canSeePatient, managesPatients, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 
-export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; escola?: string; terapeuta?: string; arquivados?: string }> }) {
+/** Pacientes da escola do usuário. O administrador não tem lista global: vê os pacientes dentro de cada escola. */
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; terapeuta?: string; arquivados?: string }> }) {
   const user = await requirePageUser();
-  const { q = "", escola: escolaParam = "", terapeuta = "", arquivados = "" } = await searchParams;
+  if (user.role === "admin") redirect("/painel/escolas");
+  const { q = "", terapeuta = "", arquivados = "" } = await searchParams;
   const db = await readDb();
   const users = new Map(db.users.map((u) => [u.id, u]));
   const tests = new Map(db.tests.map((t) => [t.id, t]));
-  const isAdmin = user.role === "admin";
-  const wholeSchool = picksTherapist(user); // admin ou visão de escola: vê todos os terapeutas
+  const wholeSchool = managesPatients(user); // administrador da escola: vê todos os pacientes e terapeutas
   const term = q.trim().toLowerCase();
-
-  // todo paciente pertence a uma escola: o admin vê uma escola por vez (a do ?escola= ou a primeira); o terapeuta, a sua
-  const schoolList = db.schools
-    .filter((s) => s.active || s.id === escolaParam || db.patients.some((p) => p.schoolId === s.id))
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, "pt-BR"));
-  const school = isAdmin ? (schoolList.find((s) => s.id === escolaParam) ?? schoolList[0]) : db.schools.find((s) => s.id === user.schoolId);
+  const school = db.schools.find((s) => s.id === user.schoolId);
   const escola = school?.id ?? "";
 
   const list = db.patients
@@ -33,34 +30,23 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     const t = users.get(id);
     return t?.role === "terapeuta" ? t.name : "sem terapeuta";
   };
-  const countIn = (schoolId: string) => db.patients.filter((p) => p.schoolId === schoolId && !p.archived).length;
 
   return (
     <div className="stack">
       <div className="row spread">
         <div>
           <h1 style={{ margin: 0 }}>Pacientes</h1>
-          {!isAdmin && <p className="muted" style={{ margin: 0 }}>{!school ? "Sua conta não está ligada a uma escola." : user.scope === "escola" ? `Todos os pacientes da ${school.name}` : `Seus pacientes na ${school.name}`}</p>}
+          <p className="muted" style={{ margin: 0 }}>{!school ? "Sua conta não está ligada a uma escola." : wholeSchool ? `Todos os pacientes da ${school.name}` : `Seus pacientes na ${school.name}`}</p>
         </div>
-        <Link href={escola ? `/painel/pacientes/novo?escola=${escola}` : "/painel/pacientes/novo"} className="btn warm">
-          + Novo paciente
-        </Link>
+        {wholeSchool && (
+          <Link href="/painel/pacientes/novo" className="btn warm">
+            + Novo paciente
+          </Link>
+        )}
       </div>
-
-      {isAdmin && schoolList.length > 1 && (
-        <nav className="tabs" style={{ marginBottom: 0 }}>
-          {schoolList.map((s) => (
-            <Link key={s.id} href={`/painel?escola=${s.id}`} className={`tab${s.id === escola ? " active" : ""}`}>
-              {s.name} ({countIn(s.id)})
-            </Link>
-          ))}
-        </nav>
-      )}
-      {isAdmin && !school && <p className="muted">Nenhuma escola cadastrada. Crie uma em Escolas.</p>}
 
       <form className="card alt row tight">
         <input type="search" name="q" placeholder="Buscar paciente ou responsável…" defaultValue={q} style={{ flex: 2, minWidth: 200 }} />
-        {isAdmin && <input type="hidden" name="escola" value={escola} />}
         {wholeSchool && (
           <select name="terapeuta" defaultValue={terapeuta} style={{ flex: 1, minWidth: 160 }}>
             <option value="">Todos os terapeutas</option>
@@ -80,7 +66,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       <section className="card">
         {list.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
-            Nenhum paciente {arquivados ? "arquivado" : "cadastrado"} {isAdmin && school ? `na ${school.name}` : ""} ainda.
+            Nenhum paciente {arquivados ? "arquivado" : "cadastrado"} ainda.
           </p>
         ) : (
           <div className="table-wrap">

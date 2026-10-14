@@ -20,12 +20,12 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
   const passwordHash = await hashPassword(password);
   const result = await updateDb((db): { error: string } | { userId: string } => {
     const inv = db.invites.find((i) => token && i.token === token && !i.acceptedAt);
-    if (!inv || new Date(inv.expiresAt) < new Date()) return { error: "Este convite é inválido ou expirou. Peça um novo ao administrador." };
+    if (!inv || new Date(inv.expiresAt) < new Date()) return { error: "Este convite é inválido ou expirou. Peça um novo a quem convidou você." };
     const email = inv.email || typedEmail;
     if (!EMAIL.test(email)) return { error: "E-mail inválido." };
     if (db.users.some((u) => u.email === email)) return { error: "Já existe uma conta com este e-mail. Entre pela tela inicial." };
-    if (inv.role === "terapeuta" && !db.schools.some((s) => s.id === inv.schoolId && s.active)) {
-      return { error: "A escola deste convite não está mais ativa. Peça um novo convite ao administrador." };
+    if (inv.role !== "admin" && !db.schools.some((s) => s.id === inv.schoolId && s.active)) {
+      return { error: "A escola deste convite não está mais ativa. Peça um novo convite a quem convidou você." };
     }
     const id = newId();
     db.users.push({
@@ -34,7 +34,7 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
       email,
       passwordHash,
       role: inv.role,
-      schoolId: inv.role === "terapeuta" ? inv.schoolId : undefined,
+      schoolId: inv.role === "admin" ? undefined : inv.schoolId,
       active: true,
       createdAt: new Date().toISOString(),
       token: newToken(),

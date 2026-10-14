@@ -116,9 +116,12 @@ export type User = {
   name: string;
   email: string;
   passwordHash: string;
-  /** admin = equipe da plataforma; terapeuta = membro de uma escola. */
-  role: "admin" | "terapeuta";
-  /** Escola do terapeuta. Administradores não pertencem a escola. */
+  /**
+   * admin = dono do Skiller TRI (plataforma). Na escola: gestor = administrador da escola (pacientes, equipe, links);
+   * terapeuta = responde os testes e analisa os próprios pacientes.
+   */
+  role: "admin" | "gestor" | "terapeuta";
+  /** Escola do gestor ou do terapeuta. O dono não pertence a escola. */
   schoolId?: string;
   active: boolean;
   createdAt: string;

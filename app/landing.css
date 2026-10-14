@@ -17,30 +17,9 @@
   color: var(--ink);
   overflow-x: clip;
 }
-/* fundo creme liso no lugar das manchas de aquarela (só nas landings de teste) */
-body:has(.lp:not(.lp-platform)) { background: #fff4e4; }
-body:has(.lp:not(.lp-platform)) .washes { display: none; }
-
-/* a landing da plataforma usa a identidade do painel (papel, aquarela, Fraunces);
-   a paleta --k-* acima é a do KAY12 e fica só nas páginas de teste */
-.lp-platform {
-  --k-orange: var(--terracotta);
-  --k-navy: var(--indigo);
-  --k-sand: var(--ochre);
-  --k-cream: var(--paper);
-  --k-green: var(--sky);
-  --k-teal: var(--sage);
-  --k-purple: var(--lilac);
-  --k-yellow: var(--ochre);
-  --ink: #2f3a4a;
-  --ink-soft: #5d6878;
-  --ink-faint: #8e96a3;
-  --line: rgba(47, 58, 74, 0.14);
-  --font-title: var(--font-display);
-}
-.lp-platform .lp-card { background: var(--card); }
-.lp-platform .lp-card.sand { background: var(--paper-2); }
-.lp-platform .lp-dark { background: #2f3a4a; }
+/* fundo creme liso no lugar das manchas de aquarela */
+body:has(.lp) { background: #fff4e4; }
+body:has(.lp) .washes { display: none; }
 
 .lp h1, .lp h2, .lp h3 { font-family: var(--font-title); font-weight: 600; letter-spacing: -0.02em; color: inherit; }
 .lp h1 { line-height: 1.02; }

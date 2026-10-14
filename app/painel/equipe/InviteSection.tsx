@@ -5,14 +5,16 @@ import { useState, useTransition } from "react";
 import { CopyLink } from "@/app/components/CopyLink";
 import { Icon } from "@/app/components/Icon";
 import { useToast } from "@/app/components/useToast";
+import { ROLE_LABEL, type Role, type SchoolRole } from "@/lib/roles";
 import { createInvite, renewInvite, revokeInvite } from "../invite-actions";
+import { SchoolRoleSelect } from "./TeamManager";
 
 type PendingInvite = {
   id: string;
   token: string;
   email: string;
   name: string;
-  role: "admin" | "terapeuta";
+  role: Role;
   school?: string;
   expiresAt: string;
   expired: boolean;
@@ -21,17 +23,17 @@ type PendingInvite = {
 /** Texto que acompanha o link ao copiar ou compartilhar (ex.: no WhatsApp). */
 function inviteMessage(i: PendingInvite) {
   const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
-  const papel = i.role === "admin" ? "administrador(a)" : `terapeuta${i.school ? ` da escola ${i.school}` : ""}`;
+  const papel = i.role === "admin" ? "dono(a) da plataforma" : `${ROLE_LABEL[i.role]}${i.school ? ` da escola ${i.school}` : ""}`;
   const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
   return `${ola} Você foi convidado(a) para entrar no Skiller TRI como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
-/** Com `school`, os convites são de terapeuta dessa escola (página da escola); sem, de administrador da plataforma. */
+/** Com `school`, convida terapeutas ou administradores dessa escola; sem, donos da plataforma. */
 export function InviteSection({ invites, school }: { invites: PendingInvite[]; school?: { id: string; name: string } }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ name: "", email: "", role: (school ? "terapeuta" : "admin") as "admin" | "terapeuta", schoolId: school?.id });
+  const [form, setForm] = useState({ name: "", email: "", role: (school ? "terapeuta" : "admin") as Role, schoolId: school?.id });
 
   function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>, onOk?: () => void) {
     start(async () => {
@@ -60,6 +62,7 @@ export function InviteSection({ invites, school }: { invites: PendingInvite[]; s
       >
         <input type="text" placeholder="Nome (opcional)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
         <input type="email" placeholder="E-mail (opcional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ flex: 2, minWidth: 200 }} />
+        {school && <SchoolRoleSelect value={form.role as SchoolRole} onChange={(role) => setForm({ ...form, role })} />}
         <button className="btn warm sm" disabled={pending}>
           {pending ? "Gerando…" : "Gerar link"}
         </button>
@@ -82,7 +85,7 @@ export function InviteSection({ invites, school }: { invites: PendingInvite[]; s
                   <td>
                     {i.name && <strong>{i.name} </strong>}
                     <span className="small">{i.email || "qualquer e-mail"}</span>
-                    <div className="faint small">{i.role === "admin" ? "administrador" : `terapeuta · ${i.school ?? "sem escola"}`}</div>
+                    <div className="faint small">{i.role === "admin" ? "dono" : `${ROLE_LABEL[i.role]} · ${i.school ?? "sem escola"}`}</div>
                   </td>
                   <td style={{ maxWidth: 360 }}>{i.expired ? <span className="faint small">gere um novo link</span> : <CopyLink path={`/convite/${i.token}`} message={inviteMessage(i)} label={i.name || i.email || undefined} />}</td>
                   <td>
