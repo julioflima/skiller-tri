@@ -53,13 +53,13 @@ export default async function TestPage({ params, searchParams }: { params: Promi
       </div>
       <Coverage test={test} />
       <nav className="tabs" style={{ marginBottom: 0 }}>
+        {tab("assistente", "✦ Assistente IA", " tab-ai")}
         {tab("perguntas", `Perguntas (${test.questions.length})`)}
         {tab("classificacoes", `Classificações (${test.categories.length})`)}
         {tab("respostas", "Respostas e pesos")}
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
         {tab("landing", "Landing page")}
-        {tab("assistente", "✦ Assistente IA", " tab-ai")}
       </nav>
 
       {aba === "landing" ? (

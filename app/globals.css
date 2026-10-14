@@ -204,9 +204,9 @@ input:focus, select:focus, textarea:focus {
   border: 1.5px solid transparent;
 }
 .tab.active { color: var(--ink); background: var(--card); border-color: var(--line); }
-/* assistente de IA em destaque, separado das abas de edição */
+/* assistente de IA em destaque, antes das abas de edição */
 .tab.tab-ai {
-  margin-left: auto;
+  margin-right: 6px;
   color: #fff;
   background: var(--lilac);
   border-color: var(--lilac);
