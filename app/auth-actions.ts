@@ -20,5 +20,5 @@ export async function login(_: { error: string }, form: FormData) {
 
 export async function logout() {
   await endSession();
-  redirect("/");
+  redirect("/entrar");
 }

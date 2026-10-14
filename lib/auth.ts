@@ -55,7 +55,7 @@ export async function currentUser(): Promise<SessionUser | null> {
 /** Para páginas: redireciona ao login se não houver sessão. */
 export async function requirePageUser(opts?: { admin?: boolean }) {
   const user = await currentUser();
-  if (!user) redirect("/");
+  if (!user) redirect("/entrar");
   if (opts?.admin && user.role !== "admin") redirect("/painel");
   return user;
 }
