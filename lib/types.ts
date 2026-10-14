@@ -87,6 +87,8 @@ export type Test = {
    * dos pacientes que o usavam (arquivados na exclusão).
    */
   deletedAt?: string;
+  /** O que a exclusão desfez, para a restauração devolver: escolas que aplicavam o teste, pacientes arquivados e a landing. */
+  deletedFrom?: { schoolIds: string[]; patientIds: string[]; landing?: TestLanding };
 };
 
 export type TestLanding = {

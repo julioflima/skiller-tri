@@ -596,7 +596,7 @@ function DeleteTestButton({ testId, name, patients, forms }: { testId: string; n
               O teste sai do painel, das escolas e da landing.{" "}
               {patients > 0 &&
                 `${patients} paciente${patients > 1 ? "s" : ""} que o usa${patients > 1 ? "m" : ""} ser${patients > 1 ? "ão" : "á"} arquivado${patients > 1 ? "s" : ""}, com ${forms} formulário${forms === 1 ? "" : "s"} e as respostas guardados no histórico. `}
-              Não dá para desfazer.
+              Dá para restaurar depois na aba Excluídos da lista de testes.
             </p>
             <div className="row">
               <button type="button" className="btn danger" onClick={() => setStep(2)}>

@@ -167,7 +167,8 @@ export async function saveLanding(id: string, input: TestLanding) {
 
 /**
  * Exclui o teste: sai do painel, das escolas e da landing, e os pacientes que o usavam são arquivados.
- * O teste continua guardado para o histórico desses pacientes. É a segunda confirmação da tela: só passa com a senha.
+ * O teste continua guardado (aba Excluídos) para o histórico desses pacientes e para poder ser restaurado.
+ * É a segunda confirmação da tela: só passa com a senha.
  */
 export async function deleteTest(id: string, password: string) {
   return guard(async () => {
@@ -175,19 +176,46 @@ export async function deleteTest(id: string, password: string) {
     const db = await readDb();
     const u = db.users.find((x) => x.id === me.id);
     if (!password || !u || !(await verifyPassword(password, u.passwordHash))) fail("Senha incorreta.");
-    const images = await updateDb((db) => {
+    await updateDb((db) => {
       const t = getTest(db, id);
-      for (const p of db.patients) if (p.testId === id) p.archived = true;
-      for (const s of db.schools) s.testIds = s.testIds.filter((x) => x !== id);
-      const images = [t.landing?.logoUrl, t.landing?.heroImageUrl];
-      // libera o endereço da landing para outro teste
+      const patients = db.patients.filter((p) => p.testId === id && !p.archived);
+      const schools = db.schools.filter((s) => s.testIds.includes(id));
+      patients.forEach((p) => (p.archived = true));
+      schools.forEach((s) => (s.testIds = s.testIds.filter((x) => x !== id)));
+      t.deletedFrom = {
+        schoolIds: schools.map((s) => s.id),
+        patientIds: patients.map((p) => p.id),
+        // fora de t.landing, o endereço fica livre para outro teste
+        ...(t.landing ? { landing: { ...t.landing, published: false } } : {}),
+      };
       delete t.landing;
       t.active = false;
       t.deletedAt = new Date().toISOString();
-      return images;
     });
-    await Promise.all(images.map(deleteLandingImage));
-    return "Teste excluído.";
+    return "Teste excluído. Ele fica na aba Excluídos.";
+  });
+}
+
+/** Desfaz a exclusão: o teste volta inativo, às escolas e com os pacientes que a exclusão tinha arquivado. */
+export async function restoreTest(id: string) {
+  return guard(async () => {
+    await admin();
+    const notes = await updateDb((db) => {
+      const t = db.tests.find((x) => x.id === id && x.deletedAt);
+      if (!t) fail("Teste excluído não encontrado.");
+      const from = t.deletedFrom ?? { schoolIds: [], patientIds: [] };
+      const notes: string[] = [];
+      for (const s of db.schools) if (from.schoolIds.includes(s.id) && !s.testIds.includes(id)) s.testIds.push(id);
+      for (const p of db.patients) if (from.patientIds.includes(p.id) && p.testId === id) p.archived = false;
+      if (from.landing) {
+        if (db.tests.some((x) => x.id !== id && x.landing?.slug === from.landing!.slug)) notes.push("O endereço da landing passou a ser de outro teste: escolha outro.");
+        else t.landing = from.landing;
+      }
+      delete t.deletedAt;
+      delete t.deletedFrom;
+      return notes;
+    });
+    return ["Teste restaurado, inativo: ative-o em Dados do teste.", ...notes].join(" ");
   });
 }
 
