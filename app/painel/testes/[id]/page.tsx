@@ -75,7 +75,21 @@ export default async function TestPage({ params, searchParams }: { params: Promi
             .slice(0, 40)}
         />
       ) : aba === "assistente" ? (
-        <TestChat testId={test.id} hasKey={hasKey} />
+        <TestChat
+          testId={test.id}
+          hasKey={hasKey}
+          refs={[
+            ...test.questions.map((q) => ({
+              kind: "pergunta" as const,
+              id: q.id,
+              label: q.text,
+              hint: [categories.find((c) => c.id === q.categoryId)?.name, q.active ? "" : "inativa"].filter(Boolean).join(" · "),
+            })),
+            ...categories.map((c) => ({ kind: "classificacao" as const, id: c.id, label: c.name })),
+            ...test.scales.map((s) => ({ kind: "escala" as const, id: s.id, label: s.name, hint: s.options.map((o) => o.label).join(" · ") })),
+            ...test.stages.map((s) => ({ kind: "etapa" as const, id: s.id, label: s.name, hint: s.kind === "inicial" ? "inicial" : "sessão" })),
+          ]}
+        />
       ) : aba === "classificacoes" ? (
         <CategoriesEditor
           testId={test.id}

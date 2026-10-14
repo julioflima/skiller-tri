@@ -136,7 +136,7 @@ export async function saveLanding(id: string, input: TestLanding) {
     const text = (v: string) => (v ?? "").trim();
     for (const url of [input.logoUrl, input.heroImageUrl].map(text)) if (url && !imageOk(id, url)) fail("Imagem inválida: envie a imagem pelo botão Enviar.");
     const contactUrl = text(input.contactUrl);
-    if (contactUrl && !/^(https:\/\/|mailto:)\S+$/.test(contactUrl)) fail("O contato precisa começar com https:// ou mailto:.");
+    if (contactUrl && !/^https:\/\/wa\.me\/\d{10,15}(\?text=\S*)?$/.test(contactUrl)) fail("WhatsApp inválido: use DDI + DDD + número, só dígitos (ex.: 5511999999999).");
     if (input.published && !text(input.headline)) fail("Escreva o título antes de publicar.");
     const replaced = await updateDb((db) => {
       const t = getTest(db, id);

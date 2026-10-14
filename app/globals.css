@@ -504,6 +504,18 @@ details.coverage.warn { border-color: rgba(224, 122, 95, 0.45); }
 .chat-changes { list-style: none; margin: 6px 0 0; padding: 0 4px; color: var(--ink-soft); }
 .chat-changes li.error { color: var(--danger); }
 .chat-input textarea { width: 100%; resize: vertical; margin-bottom: 8px; }
+.chat-compose { position: relative; }
+.chat-suggest {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 20;
+  list-style: none; margin: 0; padding: 6px; max-height: 320px; overflow-y: auto;
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(47, 58, 74, 0.16);
+}
+.chat-suggest li { display: flex; flex-direction: column; gap: 2px; padding: 7px 10px; border-radius: 8px; cursor: pointer; }
+.chat-suggest li.chat-suggest-head { cursor: default; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.chat-suggest li.on { background: rgba(154, 143, 199, 0.22); }
+.chat-symbols { gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chat-chip { display: inline-block; padding: 0 7px; margin: 0 1px; border-radius: 8px; background: rgba(255, 255, 255, 0.22); font-weight: 600; }
 
 /* ---------- link com ícones e QR code ---------- */
 .icon-btn { gap: 6px; white-space: nowrap; flex-shrink: 0; }

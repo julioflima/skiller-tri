@@ -97,7 +97,7 @@ export type TestLanding = {
   /** Imagens da marca do teste, enviadas para a pasta do teste no Blob (/arquivos/testes/<id>/landing/...). Vazio = sem imagem. */
   logoUrl: string;
   heroImageUrl: string;
-  /** Destino do botão "Falar com a equipe". Vazio = CONTACT_URL. */
+  /** Botão "Falar com a equipe": link https://wa.me/<número>?text=<mensagem>. Vazio = CONTACT_URL. */
   contactUrl: string;
 };
 
