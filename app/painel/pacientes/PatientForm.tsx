@@ -16,6 +16,7 @@ export function PatientForm({
   initial,
   schools,
   isAdmin,
+  picksTherapist = isAdmin,
   testLocked,
   defaultSchoolId,
 }: {
@@ -23,6 +24,8 @@ export function PatientForm({
   initial?: PatientInput;
   schools: SchoolOption[];
   isAdmin: boolean;
+  /** Mostra a escolha do terapeuta (administrador e visão de escola). */
+  picksTherapist?: boolean;
   testLocked?: boolean;
   /** Escola já escolhida (ex.: veio da página da escola). Sem ela, o admin precisa escolher antes de tudo. */
   defaultSchoolId?: string;
@@ -146,7 +149,7 @@ export function PatientForm({
               </select>
               {testLocked && <p className="faint">O teste não pode ser trocado depois das primeiras respostas.</p>}
             </div>
-            {isAdmin && (
+            {picksTherapist && (
               <div>
                 <label htmlFor="p-ther">Terapeuta responsável</label>
                 <select id="p-ther" value={data.therapistId} onChange={(e) => set({ therapistId: e.target.value })}>

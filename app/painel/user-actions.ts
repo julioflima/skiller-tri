@@ -1,6 +1,6 @@
 "use server";
 
-import { requireUser } from "@/lib/auth";
+import { requireRealUser, requireUser } from "@/lib/auth";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
@@ -60,6 +60,10 @@ export async function updateUser(id: string, input: { name: string; email: strin
       if (u.id === me.id && (!input.active || input.role !== "admin")) fail("Você não pode desativar nem rebaixar a própria conta.");
       const role = input.role === "admin" ? "admin" : "terapeuta";
       const schoolId = schoolFor(db, role, input.schoolId);
+      if (role === "admin" && u.role === "terapeuta") {
+        const n = db.patients.filter((p) => p.therapistId === u.id && !p.archived).length;
+        if (n) fail(`${u.name} acompanha ${n} paciente(s). Administrador não é terapeuta: passe-os a outro terapeuta antes.`);
+      }
       if (schoolId !== u.schoolId) {
         const n = db.patients.filter((p) => p.therapistId === u.id && p.schoolId === u.schoolId && !p.archived).length;
         if (n && u.role === "terapeuta") fail(`${u.name} acompanha ${n} paciente(s) na escola atual. Passe-os a outro terapeuta antes de trocar de escola.`);
@@ -91,7 +95,7 @@ export async function resetUserPassword(id: string, password: string) {
 
 export async function changeOwnName(name: string) {
   return guard(async () => {
-    const me = await requireUser();
+    const me = await requireRealUser();
     const clean = name.trim();
     if (!clean) fail("Informe o nome.");
     await updateDb((db) => {
@@ -104,7 +108,7 @@ export async function changeOwnName(name: string) {
 
 export async function changeOwnPassword(current: string, next: string) {
   return guard(async () => {
-    const me = await requireUser();
+    const me = await requireRealUser();
     checkPassword(next);
     const db = await readDb();
     const u = db.users.find((x) => x.id === me.id);
@@ -120,7 +124,7 @@ export async function changeOwnPassword(current: string, next: string) {
 
 export async function regenerateTherapistLink() {
   return guard(async () => {
-    const me = await requireUser();
+    const me = await requireRealUser();
     await updateDb((db) => {
       const u = db.users.find((x) => x.id === me.id);
       if (u) u.token = newToken();

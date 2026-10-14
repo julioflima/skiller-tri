@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { canSeePatient, requirePageUser } from "@/lib/auth";
+import { canSeePatient, picksTherapist, requirePageUser } from "@/lib/auth";
 import { schoolOptions } from "@/lib/schools";
 import { readDb } from "@/lib/db";
 import { calibrate } from "@/lib/irt";
@@ -90,7 +90,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               guardians: p.guardians.map((g) => ({ id: g.id, kind: g.kind, name: g.name, email: g.email, phone: g.phone })),
             }}
             schools={schoolOptions(db, user, p)}
-            isAdmin={user.role === "admin"}
+            isAdmin={user.role === "admin"} picksTherapist={picksTherapist(user)}
             testLocked={forms.some((f) => Object.keys(f.answers).length > 0)}
           />
           <div className="card alt row spread">

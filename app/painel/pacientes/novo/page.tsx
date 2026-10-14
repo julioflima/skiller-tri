@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requirePageUser } from "@/lib/auth";
+import { picksTherapist, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { schoolOptions } from "@/lib/schools";
 import { PatientForm } from "../PatientForm";
@@ -19,11 +19,11 @@ export default async function NewPatientPage({ searchParams }: { searchParams: P
       </Link>
       <h1>Novo paciente</h1>
       {schools.length ? (
-        <PatientForm schools={schools} isAdmin={user.role === "admin"} defaultSchoolId={escola} />
+        <PatientForm schools={schools} isAdmin={user.role === "admin"} picksTherapist={picksTherapist(user)} defaultSchoolId={escola} />
       ) : (
         <p className="muted">
           {user.role === "admin"
-            ? "Nenhuma escola ativa com testes e terapeutas. Configure em Escolas e Equipe."
+            ? "Nenhuma escola ativa com testes e terapeutas. Configure em Escolas (testes e equipe de cada escola)."
             : "Sua escola ainda não aplica nenhum teste. Fale com a equipe da plataforma."}
         </p>
       )}

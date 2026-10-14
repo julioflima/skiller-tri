@@ -16,7 +16,7 @@ export function schoolOptions(db: Db, user: SessionUser, current?: Patient) {
       .filter((t) => s.testIds.includes(t.id) && (t.active || t.id === current?.testId))
       .map((t) => ({ id: t.id, name: t.name })),
     therapists: db.users
-      .filter((u) => u.schoolId === s.id && (u.active || u.id === current?.therapistId))
+      .filter((u) => u.role === "terapeuta" && u.schoolId === s.id && (u.active || u.id === current?.therapistId))
       .map((u) => ({ id: u.id, name: u.name })),
   }));
 }

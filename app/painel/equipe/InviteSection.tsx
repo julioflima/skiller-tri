@@ -6,7 +6,6 @@ import { CopyLink } from "@/app/components/CopyLink";
 import { Icon } from "@/app/components/Icon";
 import { useToast } from "@/app/components/useToast";
 import { createInvite, renewInvite, revokeInvite } from "../invite-actions";
-import { SchoolSelect } from "./TeamManager";
 
 type PendingInvite = {
   id: string;
@@ -27,12 +26,12 @@ function inviteMessage(i: PendingInvite) {
   return `${ola} Você foi convidado(a) para entrar no Skiller TRI como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
-/** Com `school`, os convites são de terapeuta dessa escola (página da escola). */
-export function InviteSection({ invites, schools, school }: { invites: PendingInvite[]; schools: { id: string; name: string }[]; school?: { id: string; name: string } }) {
+/** Com `school`, os convites são de terapeuta dessa escola (página da escola); sem, de administrador da plataforma. */
+export function InviteSection({ invites, school }: { invites: PendingInvite[]; school?: { id: string; name: string } }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ name: "", email: "", role: "terapeuta" as "admin" | "terapeuta", schoolId: school?.id ?? (schools.length === 1 ? schools[0].id : "") });
+  const [form, setForm] = useState({ name: "", email: "", role: (school ? "terapeuta" : "admin") as "admin" | "terapeuta", schoolId: school?.id });
 
   function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>, onOk?: () => void) {
     start(async () => {
@@ -61,15 +60,6 @@ export function InviteSection({ invites, schools, school }: { invites: PendingIn
       >
         <input type="text" placeholder="Nome (opcional)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
         <input type="email" placeholder="E-mail (opcional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ flex: 2, minWidth: 200 }} />
-        {!school && (
-          <>
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "terapeuta" })} aria-label="Papel" style={{ flex: 1, minWidth: 150 }}>
-              <option value="terapeuta">Terapeuta</option>
-              <option value="admin">Administrador</option>
-            </select>
-            <SchoolSelect role={form.role} value={form.schoolId} schools={schools} onChange={(schoolId) => setForm({ ...form, schoolId })} />
-          </>
-        )}
         <button className="btn warm sm" disabled={pending}>
           {pending ? "Gerando…" : "Gerar link"}
         </button>

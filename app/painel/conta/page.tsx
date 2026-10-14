@@ -1,4 +1,5 @@
-import { requirePageUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { realUser } from "@/lib/auth";
 import { CopyLink } from "@/app/components/CopyLink";
 import { Icon } from "@/app/components/Icon";
 import { ActionButton } from "@/app/components/ActionButton";
@@ -7,13 +8,16 @@ import { NameForm } from "./NameForm";
 import { PasswordForm } from "./PasswordForm";
 
 export default async function AccountPage() {
-  const user = await requirePageUser();
+  const user = await realUser();
+  if (!user) redirect("/entrar");
   return (
     <div className="stack">
       <h1 style={{ margin: 0 }}>Minha conta</h1>
       <section className="card">
         <NameForm name={user.name} />
         <p className="muted">{user.email}</p>
+        {user.role === "terapeuta" && (
+          <>
         <h3>Meu link de respostas</h3>
         <p className="muted small">Reúne os formulários de terapeuta de todos os seus pacientes em um só lugar.</p>
         <div className="row">
@@ -25,6 +29,8 @@ export default async function AccountPage() {
             Novo link
           </ActionButton>
         </div>
+          </>
+        )}
       </section>
       <PasswordForm />
     </div>

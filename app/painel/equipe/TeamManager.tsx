@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
+import { impersonate } from "../impersonate-actions";
 import { createUser, resetUserPassword, updateUser } from "../user-actions";
 
 type Role = "admin" | "terapeuta";
@@ -42,15 +43,15 @@ function useRunner() {
   return { run, pending, toast };
 }
 
-/** Com `school`, cadastra um terapeuta direto nessa escola (página da escola). */
-export function NewMemberForm({ schools, school }: { schools: SchoolOption[]; school?: SchoolOption }) {
+/** Cadastra um terapeuta direto na escola (página da escola). */
+export function NewMemberForm({ school }: { school: SchoolOption }) {
   const { run, pending, toast } = useRunner();
-  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role, schoolId: school?.id ?? (schools.length === 1 ? schools[0].id : "") };
+  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role, schoolId: school.id };
   const [f, setF] = useState(empty);
   return (
     <section className="card">
       {toast.node}
-      <h2>{school ? "Cadastrar terapeuta" : "Cadastrar diretamente"}</h2>
+      <h2>Cadastrar terapeuta</h2>
       <p className="muted small">Crie a conta com uma senha inicial e repasse à pessoa. Ela pode trocar a senha em "Minha conta".</p>
       <form
         className="row"
@@ -70,15 +71,6 @@ export function NewMemberForm({ schools, school }: { schools: SchoolOption[]; sc
           required
           style={{ flex: 1.5, minWidth: 160 }}
         />
-        {!school && (
-          <>
-            <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })} aria-label="Papel" style={{ flex: 1, minWidth: 140 }}>
-              <option value="terapeuta">Terapeuta</option>
-              <option value="admin">Administrador</option>
-            </select>
-            <SchoolSelect role={f.role} value={f.schoolId} schools={schools} onChange={(schoolId) => setF({ ...f, schoolId })} />
-          </>
-        )}
         <button className="btn warm" disabled={pending}>
           Cadastrar
         </button>
@@ -87,21 +79,34 @@ export function NewMemberForm({ schools, school }: { schools: SchoolOption[]; sc
   );
 }
 
-export function MembersTable({ members, meId, schools, title = "Contas" }: { members: Member[]; meId: string; schools: SchoolOption[]; title?: string }) {
+/** `canImpersonate`: botão "Ver como" em cada terapeuta ativo (página da escola). */
+export function MembersTable({
+  members,
+  meId,
+  schools,
+  title = "Contas",
+  canImpersonate = false,
+}: {
+  members: Member[];
+  meId: string;
+  schools: SchoolOption[];
+  title?: string;
+  canImpersonate?: boolean;
+}) {
   return (
     <section className="card">
       <h2>{title}</h2>
       {members.length === 0 && <p className="muted" style={{ margin: 0 }}>Ninguém cadastrado ainda.</p>}
       <div className="stack">
         {members.map((m) => (
-          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} />
+          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} canImpersonate={canImpersonate} />
         ))}
       </div>
     </section>
   );
 }
 
-function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: SchoolOption[] }) {
+function MemberRow({ m, isMe, schools, canImpersonate }: { m: Member; isMe: boolean; schools: SchoolOption[]; canImpersonate: boolean }) {
   const { run, pending, toast } = useRunner();
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, schoolId: m.schoolId, active: m.active });
@@ -155,6 +160,11 @@ function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: Sc
           <span className="small">{m.role === "admin" ? "administrador da plataforma" : `terapeuta · ${m.school ?? "sem escola"}`}</span>
           <span className="small faint">{m.patients} paciente(s)</span>
           {m.active ? <span className="pill high">ativa</span> : <span className="pill low">inativa</span>}
+          {canImpersonate && m.active && m.role === "terapeuta" && (
+            <form action={impersonate.bind(null, { kind: "terapeuta", id: m.id })}>
+              <button className="btn ghost sm">Ver como</button>
+            </form>
+          )}
           <button className="btn ghost sm" onClick={() => setEditing(true)}>
             Editar
           </button>

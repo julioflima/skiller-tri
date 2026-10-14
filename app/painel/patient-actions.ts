@@ -1,6 +1,6 @@
 "use server";
 
-import { canSeePatient, requireUser } from "@/lib/auth";
+import { canSeePatient, picksTherapist, requireUser } from "@/lib/auth";
 import { newId, newToken, updateDb } from "@/lib/db";
 import { buildForms, ensureInitialForms } from "@/lib/forms";
 import { fail, guard } from "@/lib/result";
@@ -42,8 +42,9 @@ function placement(db: Db, user: SessionUser, data: PatientInput, current?: Pati
   const schoolId = user.role === "admin" ? (data.schoolId ?? current?.schoolId) : user.schoolId;
   const school = db.schools.find((s) => s.id === schoolId);
   if (!school || (!school.active && school.id !== current?.schoolId)) fail("Escolha uma escola ativa.");
-  const therapistId = user.role === "admin" ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
-  const therapist = db.users.find((u) => u.id === therapistId && u.active);
+  const therapistId = picksTherapist(user) ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
+  // administrador não é terapeuta: o responsável é sempre um terapeuta ativo da escola
+  const therapist = db.users.find((u) => u.id === therapistId && u.active && u.role === "terapeuta");
   if (!therapist || therapist.schoolId !== school.id) fail(`Escolha um terapeuta da escola ${school.name}.`);
   const testId = data.testId || current?.testId;
   const test = db.tests.find((t) => t.id === testId && (t.active || t.id === current?.testId));

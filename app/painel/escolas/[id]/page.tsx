@@ -5,6 +5,7 @@ import { readDb } from "@/lib/db";
 import { InviteSection } from "../../equipe/InviteSection";
 import { MembersTable, NewMemberForm } from "../../equipe/TeamManager";
 import { SchoolSettings } from "../SchoolEditor";
+import { impersonate } from "../../impersonate-actions";
 
 export default async function SchoolPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
   const me = await requirePageUser({ admin: true });
@@ -13,7 +14,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
   const school = db.schools.find((s) => s.id === id);
   if (!school) notFound();
   // escola recém-criada, sem testes, abre no que falta configurar
-  const { aba = school.testIds.length ? "equipe" : "dados" } = await searchParams;
+  const { aba = school.testIds.length ? "pacientes" : "dados" } = await searchParams;
 
   const now = new Date();
   const users = new Map(db.users.map((u) => [u.id, u]));
@@ -51,11 +52,16 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
       </Link>
       <div className="row spread">
         <h1 style={{ margin: 0 }}>{school.name}</h1>
-        {school.active ? <span className="pill high">ativa</span> : <span className="pill">inativa</span>}
+        <div className="row">
+          {school.active ? <span className="pill high">ativa</span> : <span className="pill">inativa</span>}
+          <form action={impersonate.bind(null, { kind: "escola", id: school.id })}>
+            <button className="btn ghost sm">Ver como esta escola</button>
+          </form>
+        </div>
       </div>
       <nav className="tabs" style={{ marginBottom: 0 }}>
-        {tab("equipe", `Equipe (${members.filter((m) => m.active).length})`)}
         {tab("pacientes", `Pacientes (${patients.length})`)}
+        {tab("equipe", `Equipe (${members.filter((m) => m.active).length})`)}
         {tab("dados", "Dados e testes")}
       </nav>
 
@@ -71,7 +77,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
           }}
           tests={db.tests.map((t) => ({ id: t.id, name: t.name, active: t.active }))}
         />
-      ) : aba === "pacientes" ? (
+      ) : aba !== "equipe" ? (
         <section className="card stack">
           <div className="row spread">
             <h2 style={{ margin: 0 }}>Pacientes</h2>
@@ -105,7 +111,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
                             <strong>{p.name}</strong>
                           </Link>
                         </td>
-                        <td className="small">{users.get(p.therapistId)?.name ?? "—"}</td>
+                        <td className="small">{users.get(p.therapistId)?.role === "terapeuta" ? users.get(p.therapistId)!.name : "sem terapeuta"}</td>
                         <td className="small">{tests.get(p.testId)?.name ?? "—"}</td>
                         <td>{db.sessions.filter((s) => s.patientId === p.id).length}</td>
                         <td>{pending ? <span className="pill mid">{pending} formulário(s)</span> : <span className="pill high">em dia</span>}</td>
@@ -119,9 +125,9 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
         </section>
       ) : (
         <>
-          <MembersTable title="Terapeutas" members={members} meId={me.id} schools={schoolOptions} />
-          <NewMemberForm schools={schoolOptions} school={{ id: school.id, name: school.name }} />
-          <InviteSection invites={invites} schools={schoolOptions} school={{ id: school.id, name: school.name }} />
+          <MembersTable title="Terapeutas" members={members} meId={me.id} schools={schoolOptions} canImpersonate />
+          <NewMemberForm school={{ id: school.id, name: school.name }} />
+          <InviteSection invites={invites} school={{ id: school.id, name: school.name }} />
         </>
       )}
     </div>
