@@ -14,6 +14,9 @@ export type ScaleOption = {
   description: string;
   /** Peso (valor numérico) atribuído a esta resposta. */
   weight: number;
+  /** Símbolo da resposta: é nele que a pessoa toca para responder. */
+  symbolSvg?: string;
+  symbolSource?: SymbolSource;
 };
 
 export type Scale = {
@@ -43,8 +46,6 @@ export type Question = {
   weight: number;
   active: boolean;
   order: number;
-  symbolSvg?: string;
-  symbolSource?: SymbolSource;
 };
 
 /** Quantas perguntas sortear para um papel, sobre quem, e de quais classificações. */
@@ -77,6 +78,8 @@ export type Test = {
   categories: Category[];
   questions: Question[];
   stages: Stage[];
+  /** Instruções para a IA desenhar os símbolos deste teste. Vazio = DEFAULT_SYMBOL_PROMPT. */
+  symbolPrompt?: string;
 };
 
 export type User = {
@@ -157,6 +160,10 @@ export type Answer = {
   min: number;
   max: number;
   answeredAt: string;
+  /** Tempo ativo (aba visível) que a pessoa levou para responder, somando as revisões, em ms. */
+  elapsedMs?: number;
+  /** Quantas vezes a resposta foi trocada depois da primeira escolha. */
+  changes?: number;
 };
 
 export type Form = {
@@ -181,7 +188,6 @@ export type Settings = {
   /** Necessário quando a chave não está vinculada a um workspace (cabeçalho anthropic-workspace-id). */
   anthropicWorkspaceId?: string;
   model: string;
-  symbolPrompt: string;
 };
 
 export type Db = {

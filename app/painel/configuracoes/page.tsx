@@ -11,7 +11,6 @@ export default async function SettingsPage() {
       <h1 style={{ margin: 0 }}>Configurações</h1>
       <SettingsForm
         model={db.settings.model}
-        symbolPrompt={db.settings.symbolPrompt}
         workspaceId={db.settings.anthropicWorkspaceId ?? ""}
         envWorkspace={Boolean(process.env.ANTHROPIC_WORKSPACE_ID)}
         maskedKey={key ? `${key.slice(0, 7)}…${key.slice(-4)}` : ""}

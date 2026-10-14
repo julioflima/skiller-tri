@@ -1,6 +1,17 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "skiller", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "-p", "3210"], "port": 3210 }
+    {
+      "name": "skiller",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3210"
+      ],
+      "port": 3210
+    }
   ]
 }

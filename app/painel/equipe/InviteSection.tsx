@@ -3,10 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CopyLink } from "@/app/components/CopyLink";
+import { Icon } from "@/app/components/Icon";
 import { useToast } from "@/app/components/useToast";
 import { createInvite, renewInvite, revokeInvite } from "../invite-actions";
 
 type PendingInvite = { id: string; token: string; email: string; name: string; role: "admin" | "terapeuta"; expiresAt: string; expired: boolean };
+
+/** Texto que acompanha o link ao copiar ou compartilhar (ex.: no WhatsApp). */
+function inviteMessage(i: PendingInvite) {
+  const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
+  const papel = i.role === "admin" ? "administrador(a)" : "terapeuta";
+  const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
+  return `${ola} Você foi convidado(a) para entrar no Skiller como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
+}
 
 export function InviteSection({ invites }: { invites: PendingInvite[] }) {
   const router = useRouter();
@@ -69,7 +78,7 @@ export function InviteSection({ invites }: { invites: PendingInvite[] }) {
                     <span className="small">{i.email || "qualquer e-mail"}</span>
                     <div className="faint small">{i.role === "admin" ? "administrador" : "terapeuta"}</div>
                   </td>
-                  <td style={{ maxWidth: 360 }}>{i.expired ? <span className="faint small">gere um novo link</span> : <CopyLink path={`/convite/${i.token}`} />}</td>
+                  <td style={{ maxWidth: 360 }}>{i.expired ? <span className="faint small">gere um novo link</span> : <CopyLink path={`/convite/${i.token}`} message={inviteMessage(i)} label={i.name || i.email || undefined} />}</td>
                   <td>
                     {i.expired ? (
                       <span className="pill low">expirado</span>
@@ -78,7 +87,8 @@ export function InviteSection({ invites }: { invites: PendingInvite[] }) {
                     )}
                   </td>
                   <td className="row" style={{ gap: 6, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                    <button type="button" className="btn ghost sm" disabled={pending} onClick={() => run(() => renewInvite(i.id))}>
+                    <button type="button" className="btn ghost sm icon-btn" disabled={pending} onClick={() => run(() => renewInvite(i.id))}>
+                      <Icon name="refresh" />
                       Novo link
                     </button>
                     <button type="button" className="btn ghost sm danger" disabled={pending} onClick={() => run(() => revokeInvite(i.id))}>

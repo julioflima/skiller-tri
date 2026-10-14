@@ -4,20 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
-import type { RespondentRole, SymbolSource } from "@/lib/types";
-import {
-  deleteQuestion,
-  freezeAutoSymbols,
-  generateSymbol,
-  moveQuestion,
-  resetSymbol,
-  saveQuestion,
-  setManualSymbol,
-  toggleQuestion,
-  type QuestionInput,
-} from "../../test-actions";
+import type { RespondentRole } from "@/lib/types";
+import { deleteQuestion, moveQuestion, saveQuestion, toggleQuestion, type QuestionInput } from "../../test-actions";
 
-type Q = QuestionInput & { id: string; active: boolean; symbol: string; symbolSource?: SymbolSource; used: boolean };
+type Q = QuestionInput & { id: string; active: boolean; used: boolean };
 type Opt = { id: string; name: string };
 
 const TARGETS: { key: RespondentRole; label: string; short: string }[] = [
@@ -31,13 +21,11 @@ export function QuestionsEditor({
   questions,
   categories,
   scales,
-  hasKey,
 }: {
   testId: string;
   questions: Q[];
   categories: (Opt & { order: number })[];
   scales: Opt[];
-  hasKey: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -45,8 +33,6 @@ export function QuestionsEditor({
   const [cat, setCat] = useState("");
   const [target, setTarget] = useState<RespondentRole | "">("");
   const [term, setTerm] = useState("");
-  const [busy, setBusy] = useState<Set<string>>(new Set());
-  const [batch, setBatch] = useState<{ done: number; failed: number; total: number } | null>(null);
 
   const run = (fn: () => Promise<Result>) =>
     start(async () => {
@@ -56,45 +42,8 @@ export function QuestionsEditor({
       router.refresh();
     });
 
-  async function genOne(id: string) {
-    setBusy((b) => new Set(b).add(id));
-    const res = await generateSymbol(testId, id);
-    setBusy((b) => {
-      const n = new Set(b);
-      n.delete(id);
-      return n;
-    });
-    return res;
-  }
-
-  async function generateMany(ids: string[]) {
-    if (!ids.length) return toast.show("Nada para gerar.");
-    let done = 0;
-    let failed = 0;
-    let lastError = "";
-    const queue = [...ids];
-    setBatch({ done, failed, total: ids.length });
-    await Promise.all(
-      Array.from({ length: Math.min(3, ids.length) }, async () => {
-        while (queue.length) {
-          const res = await genOne(queue.shift()!);
-          if (res.ok) done++;
-          else {
-            failed++;
-            lastError = res.error;
-          }
-          setBatch({ done, failed, total: ids.length });
-        }
-      }),
-    );
-    setBatch(null);
-    toast.show(failed ? `${done} gerados, ${failed} com erro. Último erro: ${lastError}` : `${done} símbolos gerados.`);
-    router.refresh();
-  }
-
   const t = term.trim().toLowerCase();
   const visible = questions.filter((q) => (!cat || q.categoryId === cat) && (!target || q.targets.includes(target)) && (!t || q.text.toLowerCase().includes(t)));
-  const missing = questions.filter((q) => q.symbolSource !== "ia" && q.symbolSource !== "manual").map((q) => q.id);
   const catName = new Map(categories.map((c) => [c.id, `${c.order}. ${c.name}`]));
   const scaleName = new Map(scales.map((s) => [s.id, s.name]));
 
@@ -148,31 +97,9 @@ export function QuestionsEditor({
             ))}
           </select>
         </div>
-        <div className="row spread" style={{ marginTop: 12 }}>
-          <span className="faint">
-            {visible.length} de {questions.length} perguntas · legenda: P = paciente, R = mãe/pai, T = terapeuta
-          </span>
-          <span className="row">
-            <button className="btn sage sm" disabled={!hasKey || !!batch || pending} onClick={() => generateMany(missing)} title={hasKey ? "" : "Cadastre a chave em Configurações"}>
-              ✦ Gerar símbolos faltantes ({missing.length})
-            </button>
-            {!hasKey && (
-              <button className="btn ghost sm" onClick={() => run(() => freezeAutoSymbols(testId))}>
-                Fixar símbolos automáticos
-              </button>
-            )}
-          </span>
-        </div>
-        {batch && (
-          <div style={{ marginTop: 10 }}>
-            <div className="progress">
-              <span style={{ width: `${((batch.done + batch.failed) / batch.total) * 100}%` }} />
-            </div>
-            <p className="faint">
-              Gerando {batch.done + batch.failed} de {batch.total}…
-            </p>
-          </div>
-        )}
+        <p className="faint" style={{ marginTop: 12 }}>
+          {visible.length} de {questions.length} perguntas · legenda: P = paciente, R = mãe/pai, T = terapeuta
+        </p>
 
         <div style={{ marginTop: 8 }}>
           {visible.map((q, i) => (
@@ -185,15 +112,8 @@ export function QuestionsEditor({
               scaleLabel={scaleName.get(q.scaleId) ?? ""}
               first={i === 0 || visible[i - 1].categoryId !== q.categoryId}
               last={i === visible.length - 1 || visible[i + 1].categoryId !== q.categoryId}
-              busy={busy.has(q.id)}
-              hasKey={hasKey}
-              disabled={pending || !!batch}
+              disabled={pending}
               run={run}
-              onGenerate={async () => {
-                const res = await genOne(q.id);
-                toast.show(res.ok ? "Símbolo gerado." : res.error);
-                router.refresh();
-              }}
               testId={testId}
             />
           ))}
@@ -299,11 +219,8 @@ function QuestionRow({
   scaleLabel,
   first,
   last,
-  busy,
-  hasKey,
   disabled,
   run,
-  onGenerate,
 }: {
   q: Q;
   testId: string;
@@ -313,21 +230,13 @@ function QuestionRow({
   scaleLabel: string;
   first: boolean;
   last: boolean;
-  busy: boolean;
-  hasKey: boolean;
   disabled: boolean;
   run: (fn: () => Promise<Result>) => void;
-  onGenerate: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [svg, setSvg] = useState("");
 
   return (
     <div className={`q-row${q.active ? "" : " inactive"}`}>
-      <div style={{ flex: "none", opacity: busy ? 0.35 : 1 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="symbol" src={q.symbol} width={52} height={52} alt="" />
-      </div>
       {editing ? (
         <div className="q-text stack">
           <QuestionForm
@@ -341,23 +250,6 @@ function QuestionRow({
               setEditing(false);
             }}
           />
-          <details>
-            <summary className="small">Símbolo manual (colar SVG)</summary>
-            <textarea
-              placeholder='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">…</svg>'
-              value={svg}
-              onChange={(e) => setSvg(e.target.value)}
-              style={{ marginTop: 8, fontFamily: "monospace", fontSize: 12 }}
-            />
-            <div className="row" style={{ marginTop: 8 }}>
-              <button className="btn ghost sm" disabled={!svg.trim()} onClick={() => run(() => setManualSymbol(testId, q.id, svg))}>
-                Usar este SVG
-              </button>
-              <button className="btn ghost sm" onClick={() => run(() => resetSymbol(testId, q.id))}>
-                Voltar ao automático
-              </button>
-            </div>
-          </details>
         </div>
       ) : (
         <div className="q-text">
@@ -372,16 +264,12 @@ function QuestionRow({
             {q.targets.includes("paciente") && q.perspectives.length === 1 && <span className="pill">só {q.perspectives[0] === "si" ? "sobre si" : "sobre o outro"}</span>}
             {q.weight !== 1 && <span className="pill mid">peso {q.weight}</span>}
             <span className="faint">· {scaleLabel}</span>
-            {q.symbolSource === "ia" && <span className="pill ia">símbolo IA</span>}
             {!q.active && <span className="pill low">inativa</span>}
           </div>
         </div>
       )}
       {!editing && (
         <div className="q-actions">
-          <button className="btn ghost sm" disabled={!hasKey || busy || disabled} onClick={onGenerate} title="Gerar símbolo com IA">
-            ✦
-          </button>
           <button className="btn ghost sm" disabled={first || disabled} onClick={() => run(() => moveQuestion(testId, q.id, -1))} aria-label="Subir">
             ↑
           </button>

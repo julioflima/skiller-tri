@@ -11,7 +11,10 @@ function locate(db: Parameters<typeof resolveToken>[0], token: string, formId: s
   return form;
 }
 
-export async function saveAnswer(token: string, formId: string, index: number, optionId: string) {
+/** Teto por pergunta: acima disso a pessoa provavelmente se afastou da tela. */
+const MAX_ELAPSED_MS = 10 * 60 * 1000;
+
+export async function saveAnswer(token: string, formId: string, index: number, optionId: string, elapsedMs?: number) {
   return updateDb((db) => {
     const form = locate(db, token, formId);
     const item = form.items[index];
@@ -22,12 +25,16 @@ export async function saveAnswer(token: string, formId: string, index: number, o
     const option = scale?.options.find((o) => o.id === optionId);
     if (!scale || !option) throw new Error("Resposta inválida.");
     const weights = scale.options.map((o) => o.weight);
+    const prev = form.answers[index];
+    const elapsed = Number.isFinite(elapsedMs) ? Math.round(Math.min(Math.max(elapsedMs!, 0), MAX_ELAPSED_MS)) : undefined;
     form.answers[index] = {
       optionId,
       weight: option.weight,
       min: Math.min(...weights),
       max: Math.max(...weights),
       answeredAt: new Date().toISOString(),
+      elapsedMs: elapsed === undefined ? prev?.elapsedMs : (prev?.elapsedMs ?? 0) + elapsed,
+      changes: prev ? (prev.changes ?? 0) + (prev.optionId === optionId ? 0 : 1) : 0,
     };
     return true;
   });

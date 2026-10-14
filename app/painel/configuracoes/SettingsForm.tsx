@@ -7,14 +7,12 @@ import { saveSettings, testApiKey } from "../user-actions";
 
 export function SettingsForm({
   model,
-  symbolPrompt,
   workspaceId,
   envWorkspace,
   maskedKey,
   envKey,
 }: {
   model: string;
-  symbolPrompt: string;
   workspaceId: string;
   envWorkspace: boolean;
   maskedKey: string;
@@ -23,8 +21,8 @@ export function SettingsForm({
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [f, setF] = useState({ apiKey: "", clearKey: false, workspaceId, model, symbolPrompt });
-  const [preview, setPreview] = useState<string>();
+  const [f, setF] = useState({ apiKey: "", clearKey: false, workspaceId, model });
+  const [preview, setPreview] = useState<string[]>();
 
   return (
     <form
@@ -42,7 +40,7 @@ export function SettingsForm({
       {toast.node}
       <h2 style={{ marginBottom: 0 }}>Inteligência artificial</h2>
       <p className="muted small" style={{ margin: 0 }}>
-        A chave da Anthropic é usada só no servidor, para desenhar um símbolo para cada pergunta. Ela nunca é enviada ao navegador.
+        A chave da Anthropic é usada só no servidor, para desenhar um símbolo para cada pergunta. Ela nunca é enviada ao navegador. As instruções de estilo dos símbolos ficam em cada teste, na aba “Dados do teste”.
       </p>
       <div>
         <label htmlFor="apiKey">Chave da API (Anthropic)</label>
@@ -77,11 +75,6 @@ export function SettingsForm({
         <label htmlFor="model">Modelo</label>
         <input id="model" type="text" value={f.model} onChange={(e) => setF({ ...f, model: e.target.value })} />
       </div>
-      <div>
-        <label htmlFor="symbolPrompt">Instruções para os símbolos</label>
-        <textarea id="symbolPrompt" value={f.symbolPrompt} onChange={(e) => setF({ ...f, symbolPrompt: e.target.value })} style={{ minHeight: 220 }} />
-        <p className="faint">As regras de formato do SVG são adicionadas automaticamente.</p>
-      </div>
       <div className="row">
         <button className="btn" disabled={pending}>
           {pending ? "Salvando…" : "Salvar"}
@@ -94,16 +87,16 @@ export function SettingsForm({
             start(async () => {
               const res = await testApiKey();
               toast.show(res.ok ? res.message ?? "OK" : res.error);
-              setPreview(res.ok ? (res.data as { src: string } | undefined)?.src : undefined);
+              setPreview(res.ok ? (res.data as { srcs: string[] } | undefined)?.srcs : undefined);
             })
           }
         >
           Testar chave salva
         </button>
-        {preview && (
+        {preview?.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="symbol" src={preview} width={64} height={64} alt="símbolo de teste" />
-        )}
+          <img key={i} className="symbol" src={src} width={64} height={64} alt="símbolo de teste" />
+        ))}
       </div>
     </form>
   );

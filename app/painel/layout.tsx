@@ -9,6 +9,7 @@ export default async function PainelLayout({ children }: { children: React.React
   const user = await requirePageUser();
   const links = [
     { href: "/painel", label: "Pacientes" },
+    { href: "/painel/analise", label: "Análise" },
     ...(user.role === "admin"
       ? [
           { href: "/painel/testes", label: "Testes" },

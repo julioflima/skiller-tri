@@ -162,7 +162,7 @@ export function pca2(points: number[][]) {
   const comps: number[][] = [];
   const vals: number[] = [];
   for (let c = 0; c < 2; c++) {
-    let v = Array.from({ length: p }, (_, i) => (i === c ? 1 : 0.5));
+    let v: number[] = Array.from({ length: p }, (_, i) => (i === c ? 1 : 0.5));
     for (let it = 0; it < 200; it++) {
       const w = C.map((row) => row.reduce((s, x, j) => s + x * v[j], 0));
       const norm = Math.sqrt(w.reduce((s, x) => s + x * x, 0)) || 1;
@@ -178,3 +178,6 @@ export function pca2(points: number[][]) {
     explained: vals.map((l) => (trace ? Math.max(0, l) / trace : 0)),
   };
 }
+
+/** Número com vírgula decimal (pt-BR). */
+export const dec = (v: number, digits = 2) => v.toFixed(digits).replace(".", ",");

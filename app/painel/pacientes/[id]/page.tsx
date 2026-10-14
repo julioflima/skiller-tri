@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canSeePatient, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { ABOUT_LABEL, familyCode, familyDescription, formProgress, GUARDIAN_LABEL, respondentName } from "@/lib/forms";
+import { calibrate } from "@/lib/irt";
+import { ABOUT_LABEL, formProgress, GUARDIAN_LABEL, respondentName } from "@/lib/forms";
 import type { Form } from "@/lib/types";
 import { ActionButton } from "@/app/components/ActionButton";
 import { CopyLink } from "@/app/components/CopyLink";
+import { Icon } from "@/app/components/Icon";
 import { deleteSession, redrawForm, regenerateLink, setArchived } from "../../patient-actions";
 import { PatientForm } from "../PatientForm";
 import { NewSessionForm, NotesBox } from "./PatientWidgets";
@@ -22,10 +24,10 @@ function age(birth?: string) {
   return a;
 }
 
-export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string; etapa?: string }> }) {
+export default async function PatientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string; etapa?: string; visao?: string }> }) {
   const user = await requirePageUser();
   const { id } = await params;
-  const { aba = "geral", etapa = "todas" } = await searchParams;
+  const { aba = "geral", etapa = "todas", visao = "360" } = await searchParams;
   const db = await readDb();
   const p = db.patients.find((x) => x.id === id);
   if (!p || !canSeePatient(user, p)) notFound();
@@ -53,7 +55,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
           {years !== null && `${years} anos · `}
-          família <strong>{familyCode(p.guardians)}</strong> ({familyDescription(p.guardians)}) · terapeuta {therapist?.name ?? "—"} · {test?.name ?? "teste removido"}
+          {p.guardians.length > 0 && `responsáveis: ${p.guardians.map((g) => g.name).join(", ")} · `}terapeuta {therapist?.name ?? "—"} · {test?.name ?? "teste removido"}
         </p>
       </section>
 
@@ -64,7 +66,14 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
       </nav>
 
       {aba === "resultados" && test ? (
-        <Results patient={p} test={test} forms={forms} etapa={etapa} />
+        <Results
+          patient={p}
+          test={test}
+          forms={forms}
+          etapa={etapa}
+          visao={visao}
+          calibration={calibrate(test, db.forms.filter((f) => f.testId === test.id))}
+        />
       ) : aba === "dados" ? (
         <>
           <PatientForm
@@ -95,7 +104,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
             <h2>Links de resposta</h2>
             <p className="muted small">Cada pessoa tem um link próprio e só vê os próprios formulários. Gerar um novo link desativa o anterior.</p>
             <div className="table-wrap">
-              <table className="table">
+              <table className="table links-table">
                 <tbody>
                   {[
                     { key: "paciente", who: `${p.name}`, role: "Paciente", token: p.token },
@@ -108,10 +117,11 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
                         <div className="faint">{l.role}</div>
                       </td>
                       <td style={{ maxWidth: 0 }}>
-                        <CopyLink path={`/r/${l.token}`} />
+                        <CopyLink path={`/r/${l.token}`} label={l.who} />
                       </td>
                       <td style={{ width: 110, textAlign: "right" }}>
-                        <ActionButton action={regenerateLink.bind(null, p.id, l.key)} confirmText="Gerar um novo link? O link atual deixará de funcionar.">
+                        <ActionButton action={regenerateLink.bind(null, p.id, l.key)} confirmText="Gerar um novo link? O link atual deixará de funcionar." className="btn ghost sm icon-btn">
+                          <Icon name="refresh" />
                           Novo link
                         </ActionButton>
                       </td>

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { canSeePatient, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { ABOUT_LABEL, formProgress, respondentName } from "@/lib/forms";
-import { SymbolImg, symbolSrc } from "@/app/components/SymbolImg";
+import { SymbolImg, optionSymbolSrc } from "@/app/components/SymbolImg";
+import { median } from "@/lib/stats";
+import { FAST_MS, fmtSeconds, timeTone } from "@/lib/timing";
 
 export default async function FormDetailPage({ params }: { params: Promise<{ id: string; formId: string }> }) {
   const user = await requirePageUser();
@@ -18,6 +20,8 @@ export default async function FormDetailPage({ params }: { params: Promise<{ id:
   const categories = new Map(test?.categories.map((c) => [c.id, c.name]));
   const scales = test?.scales ?? [];
   const pr = formProgress(f);
+  const times = Object.values(f.answers).flatMap((a) => (a.elapsedMs === undefined ? [] : [a.elapsedMs]));
+  const fast = times.filter((t) => t < FAST_MS).length;
 
   return (
     <div className="stack">
@@ -33,6 +37,17 @@ export default async function FormDetailPage({ params }: { params: Promise<{ id:
           {pr.done}/{pr.total} respondidas
           {f.finishedAt ? ` · concluído em ${new Date(f.finishedAt).toLocaleString("pt-BR")}` : " · em andamento"}
         </p>
+        {times.length > 0 && (
+          <p className="muted small">
+            Tempo mediano por pergunta: <strong>{fmtSeconds(median(times))}</strong> · total {fmtSeconds(times.reduce((a, b) => a + b, 0))}
+            {fast > 0 && (
+              <>
+                {" "}
+                · <span className="pill low">{fast} resposta(s) em menos de {fmtSeconds(FAST_MS)}</span>
+              </>
+            )}
+          </p>
+        )}
       </section>
 
       {f.blocks.map((block, bi) => (
@@ -46,18 +61,25 @@ export default async function FormDetailPage({ params }: { params: Promise<{ id:
                   if (item.block !== bi) return null;
                   const q = questions.get(item.questionId);
                   const a = f.answers[idx];
-                  const option = a && scales.flatMap((s) => s.options).find((o) => o.id === a.optionId);
+                  const scale = a && scales.find((s) => s.options.some((o) => o.id === a.optionId));
+                  const option = scale && scale.options.find((o) => o.id === a!.optionId);
                   return (
                     <tr key={idx}>
-                      <td style={{ width: 48 }}>{q && <SymbolImg src={symbolSrc(q)} size={36} label="" />}</td>
+                      <td style={{ width: 48 }}>{scale && <SymbolImg src={optionSymbolSrc(scale, a!.optionId)} size={36} label="" />}</td>
                       <td>
                         {q?.text ?? <span className="faint">pergunta removida</span>}
                         <div className="faint">{q ? categories.get(q.categoryId) : ""}</div>
                       </td>
-                      <td style={{ width: 240, textAlign: "right" }}>
+                      <td style={{ width: 300, textAlign: "right" }}>
                         {a ? (
                           <>
                             <span className="faint">{option?.label ?? "resposta"}</span> <span className="pill">peso {a.weight}</span>
+                            {a.elapsedMs !== undefined && (
+                              <div className="faint" style={{ marginTop: 4 }}>
+                                <span className={timeTone(a.elapsedMs) ? `pill ${timeTone(a.elapsedMs)}` : ""}>⏱ {fmtSeconds(a.elapsedMs)}</span>
+                                {a.changes ? ` · trocou ${a.changes}×` : ""}
+                              </div>
+                            )}
                           </>
                         ) : (
                           <span className="faint">sem resposta</span>

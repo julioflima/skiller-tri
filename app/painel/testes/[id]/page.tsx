@@ -3,9 +3,15 @@ import { notFound } from "next/navigation";
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { poolFor } from "@/lib/forms";
-import { symbolSrc } from "@/app/components/SymbolImg";
+import { optionSymbolSrc } from "@/app/components/SymbolImg";
+import { DEFAULT_SYMBOL_PROMPT, symbolPromptFor } from "@/lib/symbols";
 import { CategoriesEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
 import { QuestionsEditor } from "./QuestionsEditor";
+import { Coverage } from "./Coverage";
+import { TestChat } from "./TestChat";
+
+// o assistente pode encadear várias chamadas à IA numa única ação
+export const maxDuration = 300;
 
 export default async function TestPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
   await requirePageUser({ admin: true });
@@ -33,21 +39,30 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         <h1 style={{ margin: 0 }}>{test.name}</h1>
         {test.active ? <span className="pill high">ativo</span> : <span className="pill">inativo</span>}
       </div>
+      <Coverage test={test} />
       <nav className="tabs" style={{ marginBottom: 0 }}>
         {tab("perguntas", `Perguntas (${test.questions.length})`)}
         {tab("classificacoes", `Classificações (${test.categories.length})`)}
         {tab("respostas", "Respostas e pesos")}
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
+        {tab("assistente", "Assistente IA")}
       </nav>
 
-      {aba === "classificacoes" ? (
+      {aba === "assistente" ? (
+        <TestChat testId={test.id} hasKey={hasKey} />
+      ) : aba === "classificacoes" ? (
         <CategoriesEditor
           testId={test.id}
           categories={categories.map((c) => ({ ...c, questions: test.questions.filter((q) => q.categoryId === c.id).length }))}
         />
       ) : aba === "respostas" ? (
-        <ScalesEditor testId={test.id} scales={test.scales} usage={Object.fromEntries(test.scales.map((s) => [s.id, test.questions.filter((q) => q.scaleId === s.id).length]))} />
+        <ScalesEditor
+          testId={test.id}
+          hasKey={hasKey}
+          scales={test.scales}
+          symbols={Object.fromEntries(test.scales.flatMap((s) => s.options.map((o) => [o.id, optionSymbolSrc(s, o.id)])))}
+          usage={Object.fromEntries(test.scales.map((s) => [s.id, test.questions.filter((q) => q.scaleId === s.id).length]))} />
       ) : aba === "etapas" ? (
         <StagesEditor
           testId={test.id}
@@ -57,13 +72,13 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         />
       ) : aba === "dados" ? (
         <TestMetaEditor
-          test={{ id: test.id, name: test.name, description: test.description, active: test.active }}
+          test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
+          defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
           patients={db.patients.filter((p) => p.testId === test.id).length}
         />
       ) : (
         <QuestionsEditor
           testId={test.id}
-          hasKey={hasKey}
           categories={categories.map((c) => ({ id: c.id, name: c.name, order: c.order }))}
           scales={test.scales.map((s) => ({ id: s.id, name: s.name }))}
           questions={[...test.questions]
@@ -77,8 +92,6 @@ export default async function TestPage({ params, searchParams }: { params: Promi
               perspectives: q.perspectives,
               weight: q.weight,
               active: q.active,
-              symbol: symbolSrc(q),
-              symbolSource: q.symbolSource,
               used: used.has(q.id),
             }))}
         />

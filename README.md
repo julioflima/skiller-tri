@@ -9,6 +9,7 @@ Acompanhamento terapêutico com testes configuráveis e tema de aquarela. O test
 |------|------|-----------|
 | `/` | equipe | Login com e-mail e senha. |
 | `/painel` | terapeuta e admin | Pacientes e famílias, links individuais, sessões, resultados e exportação CSV. O terapeuta vê só os próprios pacientes. |
+| `/painel/analise` | terapeuta e admin | Correlação entre habilidades, grupos de perfis, calibração TRI e tempo de resposta por pergunta. |
 | `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos e etapas. |
 | `/painel/equipe` | admin | Cadastro de terapeutas e administradores (direto ou por convite). |
 | `/painel/configuracoes` | admin | Chave da API de IA, modelo e instruções para os símbolos. |
@@ -44,8 +45,34 @@ O sorteio prioriza as que ela respondeu menos vezes e equilibra as classificaç�
 
 Cada resposta vira um percentual entre o menor e o maior peso da escala e é ponderada pelo peso da pergunta.
 O resultado sai por classificação, separado em: paciente sobre si, paciente sobre o outro, cada responsável e terapeuta.
-Há radar, tabela, evolução por sessão e CSV com uma linha por resposta. As faixas (`lib/scoring.ts`) são descritivas e
-não substituem a análise do profissional.
+Há radar, **ecomapa** (a pessoa no centro e as habilidades como satélites: quanto mais perto, mais desenvolvida; visão 360
+ou por pessoa que respondeu), tabela, evolução por sessão e CSV com uma linha por resposta. As faixas (`lib/scoring.ts`) são
+descritivas e não substituem a análise do profissional.
+
+### TRI (`lib/irt.ts`)
+
+Ao lado do percentual, cada habilidade ganha uma estimativa pelo **modelo de escala gradual de Andrich** (família Rasch),
+unidimensional por habilidade. As dificuldades das perguntas e os limiares da escala são calibrados por máxima verossimilhança
+conjunta com todas as respostas do teste ("pessoa" = paciente × quem respondeu). O θ de cada visão sai por EAP (priori normal)
+com erro-padrão e percentil aproximado. A calibração exige ao menos 10 pessoas por habilidade e é marcada como instável abaixo
+de ~70. Em *Análise* aparecem, por pergunta, a dificuldade e o ajuste (infit/outfit; fora de 0,7–1,3 indica pergunta ambígua ou
+redundante), além da confiabilidade de cada habilidade. Numa simulação com 80 pacientes, a calibração recuperou as dificuldades
+reais com r = 0,91 e os θ com r = 0,86.
+
+### Análise (`/painel/analise`)
+
+- **Correlação** de Spearman (padrão) ou Pearson entre as habilidades, uma observação por paciente, na visão escolhida
+  (paciente sobre si, mãe/pai, terapeuta ou todas as visões sobre o paciente).
+- **Grupos de perfis**: k-means (2 a 5 grupos) sobre os percentuais, com mapa em PCA e silhueta. Só a equipe vê; pacientes e
+  famílias nunca veem grupos.
+- **Tempo de resposta**: o questionário mede o tempo com a aba visível até a escolha (somando as revisões) e quantas vezes a
+  resposta foi trocada. A análise mostra a mediana por pergunta e a parcela de respostas rápidas demais (menos de 1,5 s).
+  O tempo também aparece em cada formulário e no CSV.
+
+### Cobertura mínima
+
+O editor de testes avisa quando alguma habilidade tem menos de **3 perguntas ativas** para um público usado nas etapas
+(paciente sobre si, sobre o outro, mãe/pai, terapeuta): abaixo disso a medida não tem validade estatística.
 
 ## Como os vieses são reduzidos
 
@@ -61,7 +88,7 @@ cp .env.example .env.local   # defina SESSION_SECRET, ADMIN_EMAIL e ADMIN_PASSWO
 npm run dev
 ```
 
-Sem `ADMIN_EMAIL`/`ADMIN_PASSWORD`, o primeiro acesso é `admin@skiller.local` com senha `admin`. **Troque antes de publicar.**
+Sem `ADMIN_EMAIL`/`ADMIN_PASSWORD`. **Troque antes de publicar.**
 
 ### Símbolos com IA
 

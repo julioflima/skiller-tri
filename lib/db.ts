@@ -4,8 +4,7 @@ import path from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import seed from "./seed.json";
 import { hashPassword } from "./password";
-import { DEFAULT_SYMBOL_PROMPT } from "./symbols";
-import type { Db, Test } from "./types";
+import type { Db, Test, User } from "./types";
 
 const DATA_FILE = process.env.DATA_FILE || path.join(process.cwd(), "data", "db.json");
 
@@ -95,22 +94,39 @@ export function buildDefaultTest(): Test {
   };
 }
 
+async function adminUser(email: string, password: string): Promise<User> {
+  return {
+    id: newId(),
+    name: "Administrador",
+    email: email.trim().toLowerCase(),
+    passwordHash: await hashPassword(password),
+    role: "admin",
+    active: true,
+    createdAt: new Date().toISOString(),
+    token: newToken(),
+  };
+}
+
+/**
+ * Garante que exista a conta de ADMIN_EMAIL/ADMIN_PASSWORD (para quando o banco foi criado antes delas ou recriado).
+ * Só cria a conta que falta; uma conta existente com esse e-mail nunca é alterada.
+ */
+export async function ensureEnvAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return;
+  if ((await readDb()).users.some((u) => u.email === email)) return;
+  const user = await adminUser(email, password);
+  await updateDb((db) => {
+    if (!db.users.some((u) => u.email === email)) db.users.push(user);
+  });
+}
+
 async function buildInitialDb(): Promise<Db> {
   return {
     version: 2,
-    settings: { model: "claude-opus-5-5", symbolPrompt: DEFAULT_SYMBOL_PROMPT },
-    users: [
-      {
-        id: newId(),
-        name: "Administrador",
-        email: (process.env.ADMIN_EMAIL || "admin@skiller.local").toLowerCase(),
-        passwordHash: await hashPassword(process.env.ADMIN_PASSWORD || "admin"),
-        role: "admin",
-        active: true,
-        createdAt: new Date().toISOString(),
-        token: newToken(),
-      },
-    ],
+    settings: { model: "claude-opus-5-5" },
+    users: [await adminUser(process.env.ADMIN_EMAIL || "", process.env.ADMIN_PASSWORD || "admin")],
     invites: [],
     tests: [buildDefaultTest()],
     patients: [],
@@ -128,7 +144,7 @@ const usePostgres = () => Boolean(process.env.DATABASE_URL);
 /** Db com as listas vazias: diz ao lib/db-prisma.ts quais chaves são coleções. */
 const EMPTY: Db = {
   version: 2,
-  settings: { model: "claude-opus-5-5", symbolPrompt: DEFAULT_SYMBOL_PROMPT },
+  settings: { model: "claude-opus-5-5" },
   users: [],
   invites: [],
   tests: [],

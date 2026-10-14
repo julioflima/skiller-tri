@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
+import { GUARDIAN_LABEL } from "@/lib/forms";
 import type { GuardianKind } from "@/lib/types";
 import { createPatient, updatePatient, type GuardianInput, type PatientInput } from "../patient-actions";
 
@@ -54,12 +55,6 @@ export function PatientForm({
     });
   }
 
-  const code = data.guardians
-    .filter((g) => g.name.trim())
-    .map((g) => (g.kind === "pai" ? "M" : "F"))
-    .sort()
-    .join("");
-
   return (
     <form className="stack" onSubmit={submit}>
       {toast.node}
@@ -107,18 +102,27 @@ export function PatientForm({
       </section>
 
       <section className="card alt">
-        <div className="row spread">
-          <h2 style={{ margin: 0 }}>Responsáveis</h2>
-          {code && <span className="pill">família {code}</span>}
-        </div>
+        <h2 style={{ margin: 0 }}>Responsáveis</h2>
         <p className="muted small">Cadastre mãe e pai, duas mães ou dois pais. Cada responsável recebe o próprio link e responde separadamente.</p>
         <div className="stack">
           {data.guardians.map((g, i) => (
             <div key={g.id ?? i} className="guardian-row">
-              <select value={g.kind} onChange={(e) => setGuardian(i, { kind: e.target.value as GuardianKind })} aria-label="Mãe ou pai">
-                <option value="mae">Mãe</option>
-                <option value="pai">Pai</option>
-              </select>
+              <div className="kind-toggle" role="radiogroup" aria-label="Mãe ou pai">
+                {(["mae", "pai"] as GuardianKind[]).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="radio"
+                    aria-checked={g.kind === k}
+                    aria-label={GUARDIAN_LABEL[k]}
+                    title={GUARDIAN_LABEL[k]}
+                    className={`kind-opt ${k}${g.kind === k ? " on" : ""}`}
+                    onClick={() => setGuardian(i, { kind: k })}
+                  >
+                    <GuardianIcon kind={k} />
+                  </button>
+                ))}
+              </div>
               <input type="text" placeholder="Nome" value={g.name} onChange={(e) => setGuardian(i, { name: e.target.value })} />
               <input type="email" placeholder="E-mail (opcional)" value={g.email ?? ""} onChange={(e) => setGuardian(i, { email: e.target.value })} />
               <input type="tel" placeholder="Telefone (opcional)" value={g.phone ?? ""} onChange={(e) => setGuardian(i, { phone: e.target.value })} />
@@ -144,5 +148,24 @@ export function PatientForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function GuardianIcon({ kind }: { kind: GuardianKind }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {kind === "mae" ? (
+        <>
+          <circle cx="12" cy="6.5" r="3.2" />
+          <path d="M8.6 5.2c-1.6 2.6-1.2 5 .4 6.3M15.4 5.2c1.6 2.6 1.2 5-.4 6.3" />
+          <path d="M9.5 12.5 6 21h12l-3.5-8.5" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="6.5" r="3.2" />
+          <path d="M5.5 21v-3.5A5 5 0 0 1 10.5 12.5h3a5 5 0 0 1 5 5V21" />
+        </>
+      )}
+    </svg>
   );
 }

@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
-import { aiCredentials, aiErrorMessage, generateSymbolWithAI, svgDataUri } from "@/lib/symbols";
+import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, generateScaleSymbolsWithAI, svgDataUri } from "@/lib/symbols";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -72,6 +72,19 @@ export async function resetUserPassword(id: string, password: string) {
   });
 }
 
+export async function changeOwnName(name: string) {
+  return guard(async () => {
+    const me = await requireUser();
+    const clean = name.trim();
+    if (!clean) fail("Informe o nome.");
+    await updateDb((db) => {
+      const u = db.users.find((x) => x.id === me.id);
+      if (u) u.name = clean;
+    });
+    return "Nome alterado.";
+  });
+}
+
 export async function changeOwnPassword(current: string, next: string) {
   return guard(async () => {
     const me = await requireUser();
@@ -99,7 +112,7 @@ export async function regenerateTherapistLink() {
   });
 }
 
-export async function saveSettings(input: { apiKey: string; clearKey: boolean; workspaceId: string; model: string; symbolPrompt: string }) {
+export async function saveSettings(input: { apiKey: string; clearKey: boolean; workspaceId: string; model: string }) {
   return guard(async () => {
     await requireUser({ admin: true });
     await updateDb((db) => {
@@ -109,31 +122,30 @@ export async function saveSettings(input: { apiKey: string; clearKey: boolean; w
       if (input.workspaceId.trim()) s.anthropicWorkspaceId = input.workspaceId.trim();
       else delete s.anthropicWorkspaceId;
       s.model = input.model.trim() || s.model;
-      s.symbolPrompt = input.symbolPrompt.trim() || s.symbolPrompt;
     });
     return "Configurações salvas.";
   });
 }
 
 export async function testApiKey() {
-  return guard<{ src: string }>(async () => {
+  return guard<{ srcs: string[] }>(async () => {
     await requireUser({ admin: true });
     const db = await readDb();
     const { apiKey, workspaceId } = aiCredentials(db.settings);
     if (!apiKey) fail("Nenhuma chave cadastrada.");
-    let svg: string;
+    let svgs: string[];
     try {
-      svg = await generateSymbolWithAI({
+      svgs = await generateScaleSymbolsWithAI({
         apiKey,
         workspaceId,
         model: db.settings.model,
-        instructions: db.settings.symbolPrompt,
-        questionText: "Item de teste de configuração.",
-        avoid: [],
+        instructions: DEFAULT_SYMBOL_PROMPT,
+        scaleName: "Teste de configuração",
+        options: ["Nunca", "Às vezes", "Sempre"].map((label) => ({ label, description: "" })),
       });
     } catch (e) {
       fail(aiErrorMessage(e));
     }
-    return { message: "Chave funcionando.", data: { src: svgDataUri(svg) } };
+    return { message: "Chave funcionando.", data: { srcs: svgs.map(svgDataUri) } };
   });
 }

@@ -1,14 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
 import { finishForm, saveAnswer } from "@/app/r/actions";
 
 export type QuizItem = {
   text: string;
-  symbol: string;
   block: number;
-  options: { id: string; label: string; description: string }[];
+  options: { id: string; label: string; description: string; symbol: string }[];
 };
 
 export function Quiz({
@@ -38,18 +37,46 @@ export function Quiz({
   const item = items[Math.min(index, items.length - 1)];
   const blockStart = index === 0 || items[index - 1]?.block !== item.block;
 
+  // Cronômetro da pergunta na tela: não conta o tempo com a aba escondida.
+  const timer = useRef({ acc: 0, since: 0 as number | null });
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // começa a contar ao mostrar a pergunta; só desconta quando o navegador avisa que a aba foi escondida
+    timer.current = { acc: 0, since: performance.now() };
   }, [index]);
+
+  useEffect(() => {
+    function onVisibility() {
+      const t = timer.current;
+      if (document.hidden && t.since !== null) {
+        t.acc += performance.now() - t.since;
+        t.since = null;
+      } else if (!document.hidden && t.since === null) {
+        t.since = performance.now();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  function takeElapsed() {
+    const t = timer.current;
+    const now = performance.now();
+    const ms = t.acc + (t.since !== null ? now - t.since : 0);
+    // quem acabou de responder está com a tela à vista
+    timer.current = { acc: 0, since: now };
+    return ms;
+  }
 
   function choose(optionId: string) {
     const i = index;
+    const elapsed = takeElapsed();
     setAnswers((a) => ({ ...a, [i]: optionId }));
     setError("");
     setTimeout(() => setIndex((cur) => (cur === i ? i + 1 : cur)), 220);
     startTransition(async () => {
       try {
-        await saveAnswer(token, formId, i, optionId);
+        await saveAnswer(token, formId, i, optionId, elapsed);
       } catch {
         setError("Não foi possível salvar esta resposta. Verifique a conexão e tente de novo.");
         setAnswers((a) => {
@@ -119,12 +146,8 @@ export function Quiz({
         <>
           {blockStart && blocks[item.block] && <p className="block-instruction">{blocks[item.block]}</p>}
           <div className="card quiz-card" key={index}>
-            <div className="symbol-frame" style={{ width: 150, height: 150, margin: "0 auto" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {item.symbol && <img className="symbol" src={item.symbol} width={120} height={120} alt="" />}
-            </div>
             <p className="quiz-statement">{item.text}</p>
-            <div className="scale" role="radiogroup" aria-label="Respostas">
+            <div className="scale" role="radiogroup" aria-label="Respostas" style={{ "--n": item.options.length } as CSSProperties}>
               {item.options.map((o, k) => {
                 const selected = answers[index] === o.id;
                 return (
@@ -137,7 +160,9 @@ export function Quiz({
                     onClick={() => choose(o.id)}
                   >
                     <span className="scale-num">{k + 1}</span>
-                    <span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="symbol scale-symbol" src={o.symbol} width={72} height={72} alt="" />
+                    <span className="scale-text">
                       <span className="scale-label">{o.label}</span>
                       {o.description && <span className="scale-desc">{o.description}</span>}
                     </span>

@@ -1,8 +1,12 @@
-import { autoSymbol, svgDataUri } from "@/lib/symbols";
-import type { Question } from "@/lib/types";
+import { autoOptionSymbol, svgDataUri } from "@/lib/symbols";
+import type { Scale } from "@/lib/types";
 
-export function symbolSrc(q: Pick<Question, "id" | "symbolSvg">) {
-  return svgDataUri(q.symbolSvg || autoSymbol(q.id));
+/** Símbolo da resposta: o salvo, ou o automático pela posição na escala. */
+export function optionSymbolSrc(scale: Pick<Scale, "options">, optionId: string) {
+  const i = scale.options.findIndex((o) => o.id === optionId);
+  const o = scale.options[i];
+  if (!o) return "";
+  return svgDataUri(o.symbolSvg || autoOptionSymbol(i, scale.options.length));
 }
 
 /** Renderiza o SVG como <img>: scripts nunca executam dentro de uma imagem. */

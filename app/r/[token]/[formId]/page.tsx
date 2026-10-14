@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readDb } from "@/lib/db";
 import { resolveToken } from "@/lib/portal";
-import { symbolSrc } from "@/app/components/SymbolImg";
+import { optionSymbolSrc } from "@/app/components/SymbolImg";
 import { Quiz, type QuizItem } from "./Quiz";
 
 export const dynamic = "force-dynamic";
@@ -32,15 +32,14 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
   const test = db.tests.find((t) => t.id === form.testId);
   const questions = new Map(test?.questions.map((q) => [q.id, q]));
   const scales = new Map(test?.scales.map((s) => [s.id, s]));
-  // Só o texto, o símbolo e as opções vão ao navegador: a classificação e os pesos ficam no servidor.
+  // Só o texto e as opções (com seus símbolos) vão ao navegador: a classificação e os pesos ficam no servidor.
   const items: QuizItem[] = form.items.map((it) => {
     const q = questions.get(it.questionId);
     const scale = q ? scales.get(q.scaleId) : undefined;
     return {
       text: q?.text ?? "Pergunta indisponível",
-      symbol: q ? symbolSrc(q) : "",
       block: it.block,
-      options: scale?.options.map((o) => ({ id: o.id, label: o.label, description: o.description })) ?? [],
+      options: scale?.options.map((o) => ({ id: o.id, label: o.label, description: o.description, symbol: optionSymbolSrc(scale, o.id) })) ?? [],
     };
   });
   const answers = Object.fromEntries(Object.entries(form.answers).map(([k, a]) => [k, a.optionId]));

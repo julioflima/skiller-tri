@@ -3,7 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
 import { fail, guard } from "@/lib/result";
-import { aiCredentials, aiErrorMessage, autoSymbol, cleanSvg, describeSvg, generateSymbolWithAI, svgDataUri } from "@/lib/symbols";
+import { DEFAULT_SYMBOL_PROMPT, aiCredentials, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
 import type { About, Db, RespondentRole, Scale, Stage, Test } from "@/lib/types";
 
 const ROLES: RespondentRole[] = ["paciente", "responsavel", "terapeuta"];
@@ -90,7 +90,7 @@ export async function createTest(name: string, mode: "vazio" | "padrao" | string
   });
 }
 
-export async function updateTestMeta(id: string, name: string, description: string, active: boolean) {
+export async function updateTestMeta(id: string, name: string, description: string, active: boolean, symbolPrompt: string) {
   return guard(async () => {
     await admin();
     if (!name.trim()) fail("O nome não pode ficar vazio.");
@@ -99,6 +99,10 @@ export async function updateTestMeta(id: string, name: string, description: stri
       t.name = name.trim();
       t.description = description.trim();
       t.active = active;
+      // igual ao padrão = não fixa, para acompanhar melhorias futuras do texto padrão
+      const prompt = symbolPrompt.trim();
+      if (prompt && prompt !== DEFAULT_SYMBOL_PROMPT) t.symbolPrompt = prompt;
+      else delete t.symbolPrompt;
     });
     return "Teste salvo.";
   });
@@ -170,10 +174,21 @@ export async function saveScale(testId: string, scale: Scale) {
     }
     await updateDb((db) => {
       const t = getTest(db, testId);
+      // o símbolo não vem do formulário da escala: mantém o que já estava salvo em cada resposta
+      const prev = new Map(t.scales.find((x) => x.id === scale.id)?.options.map((o) => [o.id, o]));
       const clean: Scale = {
         id: scale.id || newId(),
         name: scale.name.trim(),
-        options: scale.options.map((o) => ({ id: o.id || newId(), label: o.label.trim(), description: o.description.trim(), weight: Number(o.weight) })),
+        options: scale.options.map((o) => {
+          const old = prev.get(o.id);
+          return {
+            id: o.id || newId(),
+            label: o.label.trim(),
+            description: o.description.trim(),
+            weight: Number(o.weight),
+            ...(old?.symbolSvg ? { symbolSvg: old.symbolSvg, symbolSource: old.symbolSource } : {}),
+          };
+        }),
       };
       const i = t.scales.findIndex((s) => s.id === clean.id);
       if (i >= 0) t.scales[i] = clean;
@@ -324,72 +339,61 @@ export async function deleteStage(testId: string, id: string) {
 
 // ---------- símbolos ----------
 
-export async function generateSymbol(testId: string, questionId: string) {
-  return guard<{ src: string }>(async () => {
+function getOption(db: Db, testId: string, scaleId: string, optionId: string) {
+  const o = getTest(db, testId).scales.find((x) => x.id === scaleId)?.options.find((x) => x.id === optionId);
+  if (!o) fail("Resposta não encontrada.");
+  return o;
+}
+
+/** Gera com IA os símbolos de todas as respostas da escala. Só grava o símbolo; texto, peso e id não mudam. */
+export async function generateScaleSymbols(testId: string, scaleId: string) {
+  return guard(async () => {
     await admin();
     const db = await readDb();
     const t = getTest(db, testId);
-    const q = t.questions.find((x) => x.id === questionId);
-    if (!q) fail("Pergunta não encontrada.");
+    const scale = t.scales.find((x) => x.id === scaleId);
+    if (!scale) fail("Escala não encontrada.");
     const { apiKey, workspaceId } = aiCredentials(db.settings);
     if (!apiKey) fail("Cadastre a chave da API em Configurações.");
-    const avoid = t.questions.filter((x) => x.id !== q.id && x.symbolSvg).map((x) => describeSvg(x.symbolSvg!));
-    let svg: string;
+    let svgs: string[];
     try {
-      svg = await generateSymbolWithAI({ apiKey, workspaceId, model: db.settings.model, instructions: db.settings.symbolPrompt, questionText: q.text, avoid });
+      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model: db.settings.model, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
     } catch (e) {
       fail(aiErrorMessage(e));
     }
+    const ids = scale.options.map((o) => o.id);
     await updateDb((db) => {
-      const target = getTest(db, testId).questions.find((x) => x.id === questionId);
-      if (!target) fail("Pergunta não encontrada.");
-      target.symbolSvg = svg;
-      target.symbolSource = "ia";
+      ids.forEach((id, i) => {
+        const o = getOption(db, testId, scaleId, id);
+        o.symbolSvg = svgs[i];
+        o.symbolSource = "ia";
+      });
     });
-    return { data: { src: svgDataUri(svg) } };
+    return "Símbolos gerados.";
   });
 }
 
-export async function setManualSymbol(testId: string, questionId: string, rawSvg: string) {
+export async function setManualSymbol(testId: string, scaleId: string, optionId: string, rawSvg: string) {
   return guard(async () => {
     await admin();
     const svg = cleanSvg(rawSvg);
     await updateDb((db) => {
-      const q = getTest(db, testId).questions.find((x) => x.id === questionId);
-      if (!q) fail("Pergunta não encontrada.");
-      q.symbolSvg = svg;
-      q.symbolSource = "manual";
+      const o = getOption(db, testId, scaleId, optionId);
+      o.symbolSvg = svg;
+      o.symbolSource = "manual";
     });
     return "Símbolo salvo.";
   });
 }
 
-export async function resetSymbol(testId: string, questionId: string) {
+export async function resetSymbol(testId: string, scaleId: string, optionId: string) {
   return guard(async () => {
     await admin();
     await updateDb((db) => {
-      const q = getTest(db, testId).questions.find((x) => x.id === questionId);
-      if (!q) return;
-      delete q.symbolSvg;
-      delete q.symbolSource;
+      const o = getOption(db, testId, scaleId, optionId);
+      delete o.symbolSvg;
+      delete o.symbolSource;
     });
     return "Símbolo automático restaurado.";
-  });
-}
-
-export async function freezeAutoSymbols(testId: string) {
-  return guard(async () => {
-    await admin();
-    return updateDb((db) => {
-      let n = 0;
-      for (const q of getTest(db, testId).questions) {
-        if (!q.symbolSvg) {
-          q.symbolSvg = autoSymbol(q.id);
-          q.symbolSource = "auto";
-          n++;
-        }
-      }
-      return `${n} símbolos fixados.`;
-    });
   });
 }

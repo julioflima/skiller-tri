@@ -14,21 +14,6 @@ export const ABOUT_LABEL: Record<About, string> = {
 
 export const GUARDIAN_LABEL = { mae: "Mãe", pai: "Pai" } as const;
 
-/** Composição familiar: M = masculino (pai), F = feminino (mãe). Ex.: MF, MM, FF. */
-export function familyCode(guardians: Guardian[]) {
-  if (!guardians.length) return "—";
-  const m = guardians.filter((g) => g.kind === "pai").length;
-  const f = guardians.filter((g) => g.kind === "mae").length;
-  return "M".repeat(m) + "F".repeat(f);
-}
-
-export function familyDescription(guardians: Guardian[]) {
-  const m = guardians.filter((g) => g.kind === "pai").length;
-  const f = guardians.filter((g) => g.kind === "mae").length;
-  const parts = [m === 1 ? "um pai" : m > 1 ? `${m} pais` : "", f === 1 ? "uma mãe" : f > 1 ? `${f} mães` : ""].filter(Boolean);
-  return parts.length ? parts.join(" e ") : "sem responsáveis cadastrados";
-}
-
 export function respondentName(patient: Patient, form: Pick<Form, "respondent">, therapistName?: string) {
   const r = form.respondent;
   if (r.role === "paciente") return patient.name;
@@ -158,4 +143,35 @@ export function formProgress(form: Form) {
   const total = form.items.length;
   const done = Object.keys(form.answers).length;
   return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+}
+
+/** Mínimo de perguntas ativas por habilidade e por público para a medida ter validade estatística. */
+export const MIN_QUESTIONS_PER_CATEGORY = 3;
+
+export const COVERAGE_COLUMNS = [
+  { key: "paciente:si", label: "Paciente · sobre si", role: "paciente", about: "si" },
+  { key: "paciente:outro", label: "Paciente · sobre o outro", role: "paciente", about: "outro" },
+  { key: "responsavel", label: "Mãe/pai", role: "responsavel", about: "paciente" },
+  { key: "terapeuta", label: "Terapeuta", role: "terapeuta", about: "paciente" },
+] as const;
+
+/** Quantas perguntas ativas cada habilidade tem para cada público. */
+export function coverage(test: Test) {
+  return [...test.categories]
+    .sort((a, b) => a.order - b.order)
+    .map((c) => ({
+      category: c,
+      counts: Object.fromEntries(
+        COVERAGE_COLUMNS.map((col) => [
+          col.key,
+          poolFor(test, { id: "", role: col.role, about: col.about, count: 0, categoryIds: [c.id], instruction: "" }).length,
+        ]),
+      ) as Record<(typeof COVERAGE_COLUMNS)[number]["key"], number>,
+    }));
+}
+
+/** Públicos que as etapas do teste realmente usam (para não alertar sobre quem nunca responde). */
+export function usedCoverageColumns(test: Test) {
+  const rules = test.stages.flatMap((s) => s.rules);
+  return COVERAGE_COLUMNS.filter((col) => rules.some((r) => r.role === col.role && (col.role !== "paciente" || r.about === col.about)));
 }

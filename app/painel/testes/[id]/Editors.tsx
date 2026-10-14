@@ -5,7 +5,20 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
 import type { About, Category, RespondentRole, Scale, Stage, StageRule } from "@/lib/types";
-import { deleteCategory, deleteScale, deleteStage, deleteTest, moveCategory, saveCategory, saveScale, saveStage, updateTestMeta } from "../../test-actions";
+import {
+  deleteCategory,
+  deleteScale,
+  deleteStage,
+  deleteTest,
+  generateScaleSymbols,
+  moveCategory,
+  resetSymbol,
+  saveCategory,
+  saveScale,
+  saveStage,
+  setManualSymbol,
+  updateTestMeta,
+} from "../../test-actions";
 
 function useRunner() {
   const router = useRouter();
@@ -117,7 +130,20 @@ function CategoryRow({
 
 // ---------------- escalas de resposta ----------------
 
-export function ScalesEditor({ testId, scales, usage }: { testId: string; scales: Scale[]; usage: Record<string, number> }) {
+export function ScalesEditor({
+  testId,
+  scales,
+  symbols,
+  usage,
+  hasKey,
+}: {
+  testId: string;
+  scales: Scale[];
+  /** Imagem do símbolo de cada resposta, por id da resposta. */
+  symbols: Record<string, string>;
+  usage: Record<string, number>;
+  hasKey: boolean;
+}) {
   const { toast } = useRunner();
   const blank: Scale = {
     id: "",
@@ -133,18 +159,34 @@ export function ScalesEditor({ testId, scales, usage }: { testId: string; scales
       <p className="muted small" style={{ margin: 0 }}>
         Cada pergunta usa uma escala. O <strong>peso</strong> é o valor de cada resposta no cálculo. O resultado é normalizado entre o menor e o maior peso da escala,
         então escalas diferentes podem ser comparadas. Pesos podem ser invertidos (ex.: 4 → 0) para perguntas em sentido negativo.
+        Cada resposta tem um <strong>símbolo</strong>, mostrado no cartão em que a pessoa toca para responder.
       </p>
       {scales.map((s) => (
-        <ScaleCard key={s.id} testId={testId} scale={s} used={usage[s.id] ?? 0} />
+        <ScaleCard key={s.id} testId={testId} scale={s} symbols={symbols} used={usage[s.id] ?? 0} hasKey={hasKey} />
       ))}
-      <ScaleCard testId={testId} scale={blank} used={0} isNew />
+      <ScaleCard testId={testId} scale={blank} symbols={symbols} used={0} hasKey={hasKey} isNew />
     </div>
   );
 }
 
-function ScaleCard({ testId, scale, used, isNew }: { testId: string; scale: Scale; used: number; isNew?: boolean }) {
+function ScaleCard({
+  testId,
+  scale,
+  symbols,
+  used,
+  hasKey,
+  isNew,
+}: {
+  testId: string;
+  scale: Scale;
+  symbols: Record<string, string>;
+  used: number;
+  hasKey: boolean;
+  isNew?: boolean;
+}) {
   const { run, pending, toast } = useRunner();
   const [s, setS] = useState(scale);
+  const [manual, setManual] = useState({ optionId: scale.options[0]?.id ?? "", svg: "" });
   const [open, setOpen] = useState(!isNew);
   const setOpt = (i: number, patch: Partial<Scale["options"][number]>) => setS({ ...s, options: s.options.map((o, j) => (j === i ? { ...o, ...patch } : o)) });
 
@@ -164,6 +206,7 @@ function ScaleCard({ testId, scale, used, isNew }: { testId: string; scale: Scal
       </div>
       <div className="stack" style={{ marginTop: 12 }}>
         <div className="scale-edit-row faint small">
+          <span>Símbolo</span>
           <span>Peso</span>
           <span>Resposta</span>
           <span>Descrição (opcional)</span>
@@ -171,6 +214,9 @@ function ScaleCard({ testId, scale, used, isNew }: { testId: string; scale: Scal
         </div>
         {s.options.map((o, i) => (
           <div key={i} className="scale-edit-row">
+            {/* respostas ainda não salvas ganham símbolo ao salvar a escala */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {symbols[o.id] ? <img className="symbol" src={symbols[o.id]} width={44} height={44} alt="" /> : <span className="faint small">—</span>}
             <input type="number" step="any" value={o.weight} onChange={(e) => setOpt(i, { weight: Number(e.target.value) })} aria-label="Peso" />
             <input type="text" value={o.label} onChange={(e) => setOpt(i, { label: e.target.value })} placeholder="Texto da resposta" aria-label="Resposta" />
             <input type="text" value={o.description} onChange={(e) => setOpt(i, { description: e.target.value })} placeholder="Explicação curta" aria-label="Descrição" />
@@ -209,6 +255,17 @@ function ScaleCard({ testId, scale, used, isNew }: { testId: string; scale: Scal
         >
           + Resposta
         </button>
+        {!isNew && (
+          <button
+            type="button"
+            className="btn sage sm"
+            disabled={!hasKey || pending}
+            title={hasKey ? "Gera os símbolos de todas as respostas desta escala" : "Cadastre a chave em Configurações"}
+            onClick={() => run(() => generateScaleSymbols(testId, s.id))}
+          >
+            {pending ? "Gerando…" : "✦ Gerar símbolos com IA"}
+          </button>
+        )}
         <span style={{ flex: 1 }} />
         {isNew && (
           <button type="button" className="btn ghost sm" onClick={() => setOpen(false)}>
@@ -240,6 +297,35 @@ function ScaleCard({ testId, scale, used, isNew }: { testId: string; scale: Scal
         </button>
       </div>
       {!isNew && used > 0 && <p className="faint" style={{ marginTop: 8 }}>Respostas já dadas guardam o peso da época; mudar os pesos vale para as próximas respostas.</p>}
+      {!isNew && (
+        <details style={{ marginTop: 10 }}>
+          <summary className="small">Símbolo manual de uma resposta (colar SVG)</summary>
+          <div className="stack" style={{ marginTop: 8 }}>
+            <select value={manual.optionId} onChange={(e) => setManual({ ...manual, optionId: e.target.value })} aria-label="Resposta">
+              {scale.options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                  {o.symbolSource ? ` (${o.symbolSource === "ia" ? "IA" : "manual"})` : " (automático)"}
+                </option>
+              ))}
+            </select>
+            <textarea
+              placeholder='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">…</svg>'
+              value={manual.svg}
+              onChange={(e) => setManual({ ...manual, svg: e.target.value })}
+              style={{ fontFamily: "monospace", fontSize: 12 }}
+            />
+            <div className="row">
+              <button type="button" className="btn ghost sm" disabled={!manual.svg.trim() || pending} onClick={() => run(() => setManualSymbol(testId, s.id, manual.optionId, manual.svg))}>
+                Usar este SVG
+              </button>
+              <button type="button" className="btn ghost sm" disabled={pending} onClick={() => run(() => resetSymbol(testId, s.id, manual.optionId))}>
+                Voltar ao automático
+              </button>
+            </div>
+          </div>
+        </details>
+      )}
     </section>
   );
 }
@@ -433,7 +519,15 @@ function StageCard({
 
 // ---------------- dados do teste ----------------
 
-export function TestMetaEditor({ test, patients }: { test: { id: string; name: string; description: string; active: boolean }; patients: number }) {
+export function TestMetaEditor({
+  test,
+  patients,
+  defaultSymbolPrompt,
+}: {
+  test: { id: string; name: string; description: string; active: boolean; symbolPrompt: string };
+  patients: number;
+  defaultSymbolPrompt: string;
+}) {
   const { run, pending, toast, router } = useRunner();
   const [f, setF] = useState(test);
   return (
@@ -450,8 +544,20 @@ export function TestMetaEditor({ test, patients }: { test: { id: string; name: s
       <label className="small" style={{ fontWeight: 400 }}>
         <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> Ativo (disponível para novos pacientes)
       </label>
+      <div>
+        <div className="row spread">
+          <label htmlFor="symbolPrompt">Instruções para os símbolos</label>
+          {f.symbolPrompt !== defaultSymbolPrompt && (
+            <button type="button" className="btn ghost sm" onClick={() => setF({ ...f, symbolPrompt: defaultSymbolPrompt })}>
+              Restaurar padrão
+            </button>
+          )}
+        </div>
+        <textarea id="symbolPrompt" value={f.symbolPrompt} onChange={(e) => setF({ ...f, symbolPrompt: e.target.value })} style={{ minHeight: 220 }} />
+        <p className="faint">Usadas pela IA ao desenhar os símbolos das perguntas deste teste. As regras de formato do SVG são adicionadas automaticamente.</p>
+      </div>
       <div className="row">
-        <button className="btn" disabled={pending} onClick={() => run(() => updateTestMeta(test.id, f.name, f.description, f.active))}>
+        <button className="btn" disabled={pending} onClick={() => run(() => updateTestMeta(test.id, f.name, f.description, f.active, f.symbolPrompt))}>
           Salvar
         </button>
         <span style={{ flex: 1 }} />

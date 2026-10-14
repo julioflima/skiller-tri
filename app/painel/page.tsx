@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { familyCode } from "@/lib/forms";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; terapeuta?: string; arquivados?: string }> }) {
   const user = await requirePageUser();
@@ -58,7 +57,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               <thead>
                 <tr>
                   <th>Paciente</th>
-                  <th>Família</th>
+                  <th>Responsáveis</th>
                   {user.role === "admin" && <th>Terapeuta</th>}
                   <th>Teste</th>
                   <th>Sessões</th>
@@ -77,11 +76,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                           <strong>{p.name}</strong>
                         </Link>
                       </td>
-                      <td>
-                        <span className="pill" title={p.guardians.map((g) => g.name).join(", ")}>
-                          {familyCode(p.guardians)}
-                        </span>
-                      </td>
+                      <td className="small">{p.guardians.map((g) => g.name).join(", ") || "—"}</td>
                       {user.role === "admin" && <td className="small">{users.get(p.therapistId)?.name ?? "—"}</td>}
                       <td className="small">{tests.get(p.testId)?.name ?? "—"}</td>
                       <td>{sessions}</td>
