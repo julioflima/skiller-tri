@@ -13,7 +13,7 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
   const db = await readDb();
   const tests = db.tests.filter((t) => !t.deletedAt);
   const deleted = db.tests.filter((t) => t.deletedAt).sort((a, b) => b.deletedAt!.localeCompare(a.deletedAt!));
-  const showDeleted = aba === "excluidos";
+  const showDeleted = aba === "arquivo";
   return (
     <div className="stack">
       <h1 style={{ margin: 0 }}>Testes</h1>
@@ -25,8 +25,8 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
         <Link href="/painel/testes" className={`tab${showDeleted ? "" : " active"}`}>
           Testes ({tests.length})
         </Link>
-        <Link href="/painel/testes?aba=excluidos" className={`tab${showDeleted ? " active" : ""}`}>
-          Excluídos ({deleted.length})
+        <Link href="/painel/testes?aba=arquivo" className={`tab${showDeleted ? " active" : ""}`}>
+          Arquivo ({deleted.length})
         </Link>
       </nav>
       {showDeleted ? (
@@ -66,7 +66,7 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
             </div>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              Nenhum teste excluído.
+              O arquivo está vazio.
             </p>
           )}
         </section>

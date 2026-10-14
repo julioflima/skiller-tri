@@ -167,7 +167,7 @@ export async function saveLanding(id: string, input: TestLanding) {
 
 /**
  * Exclui o teste: sai do painel, das escolas e da landing, e os pacientes que o usavam são arquivados.
- * O teste continua guardado (aba Excluídos) para o histórico desses pacientes e para poder ser restaurado.
+ * O teste continua guardado (aba Arquivo) para o histórico desses pacientes e para poder ser restaurado.
  * É a segunda confirmação da tela: só passa com a senha.
  */
 export async function deleteTest(id: string, password: string) {
@@ -192,7 +192,7 @@ export async function deleteTest(id: string, password: string) {
       t.active = false;
       t.deletedAt = new Date().toISOString();
     });
-    return "Teste excluído. Ele fica na aba Excluídos.";
+    return "Teste excluído. Ele fica na aba Arquivo.";
   });
 }
 
