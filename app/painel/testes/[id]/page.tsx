@@ -24,8 +24,8 @@ export default async function TestPage({ params, searchParams }: { params: Promi
   const used = new Set(db.forms.filter((f) => f.testId === test.id).flatMap((f) => f.items.map((i) => i.questionId)));
   const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const categories = [...test.categories].sort((a, b) => a.order - b.order);
-  const tab = (key: string, label: string) => (
-    <Link href={`/painel/testes/${test.id}?aba=${key}`} className={`tab${aba === key ? " active" : ""}`}>
+  const tab = (key: string, label: string, extra = "") => (
+    <Link href={`/painel/testes/${test.id}?aba=${key}`} className={`tab${extra}${aba === key ? " active" : ""}`}>
       {label}
     </Link>
   );
@@ -59,7 +59,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
         {tab("landing", "Landing page")}
-        {tab("assistente", "Assistente IA")}
+        {tab("assistente", "✦ Assistente IA", " tab-ai")}
       </nav>
 
       {aba === "landing" ? (

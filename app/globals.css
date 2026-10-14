@@ -204,6 +204,16 @@ input:focus, select:focus, textarea:focus {
   border: 1.5px solid transparent;
 }
 .tab.active { color: var(--ink); background: var(--card); border-color: var(--line); }
+/* assistente de IA em destaque, separado das abas de edição */
+.tab.tab-ai {
+  margin-left: auto;
+  color: #fff;
+  background: var(--lilac);
+  border-color: var(--lilac);
+  box-shadow: 0 2px 10px rgba(154, 143, 199, 0.45);
+}
+.tab.tab-ai:hover { background: #8a7fbb; }
+.tab.tab-ai.active { color: #fff; background: var(--indigo); border-color: var(--indigo); }
 
 /* ---------- símbolos ---------- */
 .symbol {
