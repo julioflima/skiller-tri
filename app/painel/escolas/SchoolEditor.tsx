@@ -12,8 +12,6 @@ type SchoolView = {
   name: string;
   active: boolean;
   testIds: string[];
-  therapists: string[];
-  patients: number;
   testsInUse: string[];
 };
 
@@ -21,26 +19,30 @@ function useRunner() {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const run = (fn: () => Promise<Result>, onOk?: () => void) =>
+  const run = <T,>(fn: () => Promise<Result<T>>, onOk?: (data?: T) => void) =>
     start(async () => {
       const res = await fn();
       if (!res.ok) return toast.show(res.error);
       toast.show(res.message ?? "Feito.");
-      onOk?.();
+      onOk?.(res.data);
       router.refresh();
     });
-  return { run, pending, toast };
+  return { run, pending, toast, router };
 }
 
+/** Cria a escola e abre a página dela para configurar testes e equipe. */
 export function NewSchoolForm() {
-  const { run, pending, toast } = useRunner();
+  const { run, pending, toast, router } = useRunner();
   const [name, setName] = useState("");
   return (
     <form
       className="card alt row"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => createSchool(name), () => setName(""));
+        run(
+          () => createSchool(name),
+          (data) => data && router.push(`/painel/escolas/${data.id}`),
+        );
       }}
     >
       {toast.node}
@@ -52,7 +54,7 @@ export function NewSchoolForm() {
   );
 }
 
-export function SchoolCard({ school, tests }: { school: SchoolView; tests: TestOption[] }) {
+export function SchoolSettings({ school, tests }: { school: SchoolView; tests: TestOption[] }) {
   const { run, pending, toast } = useRunner();
   const [f, setF] = useState({ name: school.name, active: school.active, testIds: school.testIds });
   const dirty = f.name !== school.name || f.active !== school.active || f.testIds.join() !== school.testIds.join();
@@ -61,15 +63,16 @@ export function SchoolCard({ school, tests }: { school: SchoolView; tests: TestO
   return (
     <section className="card stack">
       {toast.node}
-      <div className="row spread">
-        <input type="text" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Nome da escola" style={{ flex: 1, minWidth: 200, fontWeight: 700 }} />
-        <label className="small" style={{ fontWeight: 400, margin: 0 }}>
-          <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> ativa
-        </label>
+      <div className="field">
+        <label htmlFor="school-name">Nome da escola</label>
+        <div className="row">
+          <input id="school-name" type="text" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={{ flex: 1, minWidth: 200 }} />
+          <label className="small" style={{ fontWeight: 400, margin: 0 }}>
+            <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> ativa
+          </label>
+        </div>
+        {!f.active && <p className="faint" style={{ margin: "6px 0 0" }}>Inativa: os terapeutas dela deixam de ver os testes e não dá para cadastrar pacientes.</p>}
       </div>
-      <p className="muted small" style={{ margin: 0 }}>
-        {school.patients} paciente(s) · equipe: {school.therapists.join(", ") || "nenhum terapeuta ainda (cadastre em Equipe)"}
-      </p>
       <div>
         <label>Testes aplicados</label>
         {tests.length === 0 ? (
@@ -84,6 +87,7 @@ export function SchoolCard({ school, tests }: { school: SchoolView; tests: TestO
             ))}
           </div>
         )}
+        <p className="faint" style={{ margin: "6px 0 0" }}>Um teste em uso por pacientes da escola não pode ser retirado.</p>
       </div>
       <div className="row">
         <button className="btn sm" disabled={pending || !dirty} onClick={() => run(() => updateSchool(school.id, f))}>

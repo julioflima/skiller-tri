@@ -24,14 +24,15 @@ function inviteMessage(i: PendingInvite) {
   const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
   const papel = i.role === "admin" ? "administrador(a)" : `terapeuta${i.school ? ` da escola ${i.school}` : ""}`;
   const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
-  return `${ola} Você foi convidado(a) para entrar no KAY12 como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
+  return `${ola} Você foi convidado(a) para entrar no Skiller TRI como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
-export function InviteSection({ invites, schools }: { invites: PendingInvite[]; schools: { id: string; name: string }[] }) {
+/** Com `school`, os convites são de terapeuta dessa escola (página da escola). */
+export function InviteSection({ invites, schools, school }: { invites: PendingInvite[]; schools: { id: string; name: string }[]; school?: { id: string; name: string } }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ name: "", email: "", role: "terapeuta" as "admin" | "terapeuta", schoolId: schools.length === 1 ? schools[0].id : "" });
+  const [form, setForm] = useState({ name: "", email: "", role: "terapeuta" as "admin" | "terapeuta", schoolId: school?.id ?? (schools.length === 1 ? schools[0].id : "") });
 
   function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>, onOk?: () => void) {
     start(async () => {
@@ -60,11 +61,15 @@ export function InviteSection({ invites, schools }: { invites: PendingInvite[]; 
       >
         <input type="text" placeholder="Nome (opcional)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
         <input type="email" placeholder="E-mail (opcional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ flex: 2, minWidth: 200 }} />
-        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "terapeuta" })} aria-label="Papel" style={{ flex: 1, minWidth: 150 }}>
-          <option value="terapeuta">Terapeuta</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <SchoolSelect role={form.role} value={form.schoolId} schools={schools} onChange={(schoolId) => setForm({ ...form, schoolId })} />
+        {!school && (
+          <>
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "terapeuta" })} aria-label="Papel" style={{ flex: 1, minWidth: 150 }}>
+              <option value="terapeuta">Terapeuta</option>
+              <option value="admin">Administrador</option>
+            </select>
+            <SchoolSelect role={form.role} value={form.schoolId} schools={schools} onChange={(schoolId) => setForm({ ...form, schoolId })} />
+          </>
+        )}
         <button className="btn warm sm" disabled={pending}>
           {pending ? "Gerando…" : "Gerar link"}
         </button>

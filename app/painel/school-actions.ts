@@ -7,15 +7,16 @@ import { fail, guard } from "@/lib/result";
 export type SchoolInput = { name: string; testIds: string[]; active: boolean };
 
 export async function createSchool(name: string) {
-  return guard(async () => {
+  return guard<{ id: string }>(async () => {
     await requireUser({ admin: true });
     const clean = name.trim();
     if (!clean) fail("Informe o nome da escola.");
+    const id = newId();
     await updateDb((db) => {
       if (db.schools.some((s) => s.name.toLowerCase() === clean.toLowerCase())) fail("Já existe uma escola com esse nome.");
-      db.schools.push({ id: newId(), name: clean, testIds: [], active: true, createdAt: new Date().toISOString() });
+      db.schools.push({ id, name: clean, testIds: [], active: true, createdAt: new Date().toISOString() });
     });
-    return "Escola criada. Escolha os testes que ela aplica e cadastre a equipe.";
+    return { message: "Escola criada. Escolha os testes que ela aplica e cadastre a equipe.", data: { id } };
   });
 }
 

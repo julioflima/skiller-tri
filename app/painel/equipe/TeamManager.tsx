@@ -7,7 +7,7 @@ import type { Result } from "@/lib/result";
 import { createUser, resetUserPassword, updateUser } from "../user-actions";
 
 type Role = "admin" | "terapeuta";
-type Member = { id: string; name: string; email: string; role: Role; schoolId?: string; school?: string; active: boolean; patients: number };
+export type Member = { id: string; name: string; email: string; role: Role; schoolId?: string; school?: string; active: boolean; patients: number };
 type SchoolOption = { id: string; name: string };
 
 /** Escola só faz sentido para terapeuta; administrador é da plataforma. */
@@ -42,14 +42,15 @@ function useRunner() {
   return { run, pending, toast };
 }
 
-export function NewMemberForm({ schools }: { schools: SchoolOption[] }) {
+/** Com `school`, cadastra um terapeuta direto nessa escola (página da escola). */
+export function NewMemberForm({ schools, school }: { schools: SchoolOption[]; school?: SchoolOption }) {
   const { run, pending, toast } = useRunner();
-  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role, schoolId: schools.length === 1 ? schools[0].id : "" };
+  const empty = { name: "", email: "", password: "", role: "terapeuta" as Role, schoolId: school?.id ?? (schools.length === 1 ? schools[0].id : "") };
   const [f, setF] = useState(empty);
   return (
     <section className="card">
       {toast.node}
-      <h2>Cadastrar diretamente</h2>
+      <h2>{school ? "Cadastrar terapeuta" : "Cadastrar diretamente"}</h2>
       <p className="muted small">Crie a conta com uma senha inicial e repasse à pessoa. Ela pode trocar a senha em "Minha conta".</p>
       <form
         className="row"
@@ -69,11 +70,15 @@ export function NewMemberForm({ schools }: { schools: SchoolOption[] }) {
           required
           style={{ flex: 1.5, minWidth: 160 }}
         />
-        <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })} aria-label="Papel" style={{ flex: 1, minWidth: 140 }}>
-          <option value="terapeuta">Terapeuta</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <SchoolSelect role={f.role} value={f.schoolId} schools={schools} onChange={(schoolId) => setF({ ...f, schoolId })} />
+        {!school && (
+          <>
+            <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })} aria-label="Papel" style={{ flex: 1, minWidth: 140 }}>
+              <option value="terapeuta">Terapeuta</option>
+              <option value="admin">Administrador</option>
+            </select>
+            <SchoolSelect role={f.role} value={f.schoolId} schools={schools} onChange={(schoolId) => setF({ ...f, schoolId })} />
+          </>
+        )}
         <button className="btn warm" disabled={pending}>
           Cadastrar
         </button>
@@ -82,10 +87,11 @@ export function NewMemberForm({ schools }: { schools: SchoolOption[] }) {
   );
 }
 
-export function MembersTable({ members, meId, schools }: { members: Member[]; meId: string; schools: SchoolOption[] }) {
+export function MembersTable({ members, meId, schools, title = "Contas" }: { members: Member[]; meId: string; schools: SchoolOption[]; title?: string }) {
   return (
     <section className="card">
-      <h2>Contas</h2>
+      <h2>{title}</h2>
+      {members.length === 0 && <p className="muted" style={{ margin: 0 }}>Ninguém cadastrado ainda.</p>}
       <div className="stack">
         {members.map((m) => (
           <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} />
