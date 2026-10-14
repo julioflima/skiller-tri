@@ -1,11 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
-
-/** Logo KAY12: mascote em círculo + wordmark. `large` nas telas de entrada. */
-export function BrandMark({ large = false }: { large?: boolean }) {
+/** Nome da plataforma em texto, enquanto ela não tem logo próprio. `large` nas telas de entrada, `light` sobre fundo escuro. */
+export function BrandMark({ large = false, light = false }: { large?: boolean; light?: boolean }) {
   return (
-    <>
-      <img src="/brand/avatar.png" alt="" className={`brand-avatar${large ? " lg" : ""}`} />
-      <img src="/brand/wordmark.svg" alt="KAY12" className={`brand-wordmark${large ? " lg" : ""}`} />
-    </>
+    <span className={`wordmark${large ? " lg" : ""}${light ? " light" : ""}`}>
+      Skiller<b>TRI</b>
+    </span>
   );
 }

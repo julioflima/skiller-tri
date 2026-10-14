@@ -50,11 +50,4 @@ export function Dots() {
   );
 }
 
-/** Nome da plataforma em texto, enquanto ela não tem logo próprio. */
-export function PlatformWordmark({ light = false }: { light?: boolean }) {
-  return (
-    <span className={`lp-wordmark${light ? " light" : ""}`}>
-      Skiller<b>TRI</b>
-    </span>
-  );
-}
+export { BrandMark as PlatformWordmark } from "./BrandMark";

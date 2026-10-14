@@ -109,14 +109,11 @@ a { color: var(--indigo); }
   align-items: center;
   gap: 10px;
 }
-.brand-avatar {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px #e8692a;
-}
-.brand-avatar.lg { width: 56px; height: 56px; }
-.brand-wordmark { height: 28px; width: auto; display: block; }
-.brand-wordmark.lg { height: 42px; }
+.wordmark { font: 700 1.45rem/1 var(--font-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+.wordmark b { margin-left: 5px; padding: 2px 8px 3px; border-radius: 999px; background: var(--indigo); color: var(--paper); font: 700 0.62em/1 var(--font-body); letter-spacing: 0.08em; vertical-align: 4px; }
+.wordmark.lg { font-size: 2.1rem; }
+.wordmark.light { color: var(--paper); }
+.wordmark.light b { background: var(--terracotta); }
 .brand-slogan { font-size: 1.15rem; font-weight: 400; margin-left: 4px; }
 @media (max-width: 520px) { .brand-slogan { display: none; } }
 

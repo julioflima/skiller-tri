@@ -17,9 +17,30 @@
   color: var(--ink);
   overflow-x: clip;
 }
-/* fundo creme liso no lugar das manchas de aquarela */
-body:has(.lp) { background: #fff4e4; }
-body:has(.lp) .washes { display: none; }
+/* fundo creme liso no lugar das manchas de aquarela (só nas landings de teste) */
+body:has(.lp:not(.lp-platform)) { background: #fff4e4; }
+body:has(.lp:not(.lp-platform)) .washes { display: none; }
+
+/* a landing da plataforma usa a identidade do painel (papel, aquarela, Fraunces);
+   a paleta --k-* acima é a do KAY12 e fica só nas páginas de teste */
+.lp-platform {
+  --k-orange: var(--terracotta);
+  --k-navy: var(--indigo);
+  --k-sand: var(--ochre);
+  --k-cream: var(--paper);
+  --k-green: var(--sky);
+  --k-teal: var(--sage);
+  --k-purple: var(--lilac);
+  --k-yellow: var(--ochre);
+  --ink: #2f3a4a;
+  --ink-soft: #5d6878;
+  --ink-faint: #8e96a3;
+  --line: rgba(47, 58, 74, 0.14);
+  --font-title: var(--font-display);
+}
+.lp-platform .lp-card { background: var(--card); }
+.lp-platform .lp-card.sand { background: var(--paper-2); }
+.lp-platform .lp-dark { background: #2f3a4a; }
 
 .lp h1, .lp h2, .lp h3 { font-family: var(--font-title); font-weight: 600; letter-spacing: -0.02em; color: inherit; }
 .lp h1 { line-height: 1.02; }
@@ -193,9 +214,8 @@ body:has(.lp) .washes { display: none; }
 .lp-footer .faint { margin-left: auto; color: rgba(255, 244, 228, 0.6); }
 
 /* ---------- plataforma e páginas de teste ---------- */
-.lp-wordmark { font: 700 1.6rem/1 var(--font-title); letter-spacing: -0.02em; color: var(--k-navy); }
-.lp-wordmark b { margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px; background: var(--k-orange); color: var(--k-cream); font-weight: 700; font-size: 0.8em; vertical-align: 2px; }
-.lp-wordmark.light { color: var(--k-cream); font-size: 1.3rem; }
+.lp-footer .wordmark { font-size: 1.3rem; }
+.lp-logo { height: 28px; width: auto; display: block; }
 .lp-test-name { font: 600 1.35rem/1.1 var(--font-title); color: var(--k-navy); }
 .lp-test-name.light { color: var(--k-cream); }
 .lp-preview { margin: 0; padding: 8px 16px; text-align: center; background: var(--k-yellow); font-weight: 700; font-size: 0.9rem; }

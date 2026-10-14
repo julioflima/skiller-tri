@@ -80,7 +80,7 @@ export default async function TestLandingPage({ params, searchParams }: Params) 
       {!lp.published || !test.active ? <p className="lp-preview">Prévia: esta página ainda não está publicada.</p> : null}
       <header className="container topbar">
         <Link href={`/teste/${lp.slug}`} className="brand">
-          {lp.logoUrl ? <img src={lp.logoUrl} alt={test.name} className="brand-wordmark" /> : <span className="lp-test-name">{test.name}</span>}
+          {lp.logoUrl ? <img src={lp.logoUrl} alt={test.name} className="lp-logo" /> : <span className="lp-test-name">{test.name}</span>}
         </Link>
         <nav className="row lp-nav">
           {categories.length > 0 && <a href="#classificacoes">O que mede</a>}

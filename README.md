@@ -1,8 +1,9 @@
 # Skiller TRI · Acompanhamento por meio de testes
 
-Plataforma de escolas que acompanham seus pacientes por meio de testes configuráveis. Cada **escola** é uma equipe de
-terapeutas que aplica alguns testes da plataforma; cada **teste** tem a própria landing page. O teste inicial vem da planilha
-*12 habilidades fora da caixa* (KAY12: 98 perguntas, 12 classificações, escala 0–4).
+Plataforma de escolas que acompanham seus pacientes por meio de testes. A plataforma cria e calibra os testes; cada **escola**
+é uma equipe de terapeutas que escolhe quais deles aplica; paciente e família respondem pelo celular e o terapeuta acompanha
+os resultados e a evolução sessão a sessão. Cada **teste** é um produto com nome, landing page e identidade visual próprios
+(veja [Testes da plataforma](#testes-da-plataforma)).
 
 ## Quem usa
 
@@ -12,7 +13,7 @@ terapeutas que aplica alguns testes da plataforma; cada **teste** tem a própria
 | `/teste/<endereço>` | público | Landing de um teste (ex.: `/teste/kay12`). Rascunho: `?previa=1`, só para admin. |
 | `/entrar` | equipe | Login com e-mail e senha. |
 | `/painel` | terapeuta e admin | Pacientes e famílias, links individuais, sessões, resultados e exportação CSV. O terapeuta vê só os próprios pacientes, na sua escola. |
-| `/painel/analise` | terapeuta e admin | Correlação entre habilidades, grupos de perfis, calibração TRI e tempo de resposta por pergunta. O terapeuta vê só os testes da escola e os próprios pacientes. |
+| `/painel/analise` | terapeuta e admin | Correlação entre classificações, grupos de perfis, calibração TRI e tempo de resposta por pergunta. O terapeuta vê só os testes da escola e os próprios pacientes. |
 | `/painel/testes` | admin | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
 | `/painel/escolas` | admin | Escolas: nome, situação e quais testes cada uma aplica. |
 | `/painel/equipe` | admin | Cadastro de terapeutas (sempre de uma escola) e administradores (direto ou por convite). |
@@ -27,14 +28,22 @@ terapeutas que aplica alguns testes da plataforma; cada **teste** tem a própria
   precisam ser dessa escola. Um teste em uso por pacientes da escola não pode ser retirado dela; um terapeuta com pacientes não
   troca de escola sem antes passá-los a outro terapeuta.
 
-Os dados anteriores às escolas são migrados na leitura (`migrate` em `lib/db.ts`, só acrescenta campos): terapeutas e pacientes vão
-para a escola **Fora da Caixa** (id fixo `escola-padrao`, com todos os testes) e o teste das 12 habilidades recebe a landing
-`/teste/kay12`, com o conteúdo que antes era a página inicial.
+## Identidade visual
+
+A plataforma e os testes têm identidades separadas:
+
+- **Plataforma** (`/`, painel, login, convite, página do respondente, favicon): papel com manchas de aquarela, títulos em
+  Fraunces, índigo e terracota, e o nome **Skiller TRI** escrito em texto (`app/components/BrandMark.tsx`) enquanto não há logo.
+- **Teste** (`/teste/<endereço>`): logo, imagem de destaque e textos vêm da landing do teste. A paleta `--k-*` de
+  `app/landing.css` é a do KAY12; a landing da plataforma (`.lp-platform`) a substitui pelas cores do painel.
+
+Marca, mascote e slogan de um teste não aparecem fora da landing dele.
 
 ## Landing dos testes
 
 Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. As classificações, quem
-responde e as etapas saem do próprio teste. Testes ativos e publicados aparecem na página inicial da plataforma.
+responde e as etapas saem do próprio teste. Testes ativos e publicados aparecem na página inicial da plataforma. O botão
+"Falar com a equipe" da página inicial aponta para `CONTACT_URL` e some sem ela.
 
 ## Pacientes e famílias
 
@@ -52,37 +61,47 @@ Um teste define:
 - **Etapas**: *Início do tratamento* (uma vez) e *Sessão* (a cada sessão registrada). Cada etapa tem regras do tipo
   "quem responde, quantas perguntas, sobre quem, de quais classificações", com uma instrução mostrada antes do bloco.
 
-O teste padrão segue o combinado:
+Os números de cada etapa podem ser alterados em *Testes → Etapas*. As perguntas são sorteadas entre as que servem para aquela pessoa.
+O sorteio prioriza as que ela respondeu menos vezes e equilibra as classificações. Um formulário ainda não iniciado pode ser sorteado de novo.
+
+## Testes da plataforma
+
+### KAY12 · 12 habilidades fora da caixa
+
+Triagem (não diagnóstico) das 12 habilidades socioemocionais de adolescentes, criada com a escola **Fora da Caixa**. Veio da
+planilha *12 habilidades fora da caixa*: 98 perguntas, 12 classificações, escala 0–4. Landing em `/teste/kay12`, com logo e
+mascote próprios. As etapas seguem o combinado com a escola:
 
 | Etapa | Paciente | Cada mãe/pai | Terapeuta |
 |-------|----------|--------------|-----------|
 | Início do tratamento | 30 sobre si | 60 sobre o paciente | — |
 | Cada sessão | 5 sobre si + 5 sobre o outro | — | 10 sobre o paciente |
 
-Todos esses números podem ser alterados em *Testes → Etapas*. As perguntas são sorteadas entre as que servem para aquela pessoa.
-O sorteio prioriza as que ela respondeu menos vezes e equilibra as classificações. Um formulário ainda não iniciado pode ser sorteado de novo.
+Os dados anteriores às escolas são migrados na leitura (`migrate` em `lib/db.ts`, só acrescenta campos): terapeutas e pacientes
+vão para a escola **Fora da Caixa** (id fixo `escola-padrao`, com todos os testes) e o KAY12 recebe a landing `/teste/kay12`,
+com o conteúdo que antes era a página inicial.
 
 ## Resultados
 
 Cada resposta vira um percentual entre o menor e o maior peso da escala e é ponderada pelo peso da pergunta.
 O resultado sai por classificação, separado em: paciente sobre si, paciente sobre o outro, cada responsável e terapeuta.
-Há radar, **ecomapa** (a pessoa no centro e as habilidades como satélites: quanto mais perto, mais desenvolvida; visão 360
+Há radar, **ecomapa** (a pessoa no centro e as classificações como satélites: quanto mais perto, mais desenvolvida; visão 360
 ou por pessoa que respondeu), tabela, evolução por sessão e CSV com uma linha por resposta. As faixas (`lib/scoring.ts`) são
 descritivas e não substituem a análise do profissional.
 
 ### TRI (`lib/irt.ts`)
 
-Ao lado do percentual, cada habilidade ganha uma estimativa pelo **modelo de escala gradual de Andrich** (família Rasch),
-unidimensional por habilidade. As dificuldades das perguntas e os limiares da escala são calibrados por máxima verossimilhança
+Ao lado do percentual, cada classificação ganha uma estimativa pelo **modelo de escala gradual de Andrich** (família Rasch),
+unidimensional por classificação. As dificuldades das perguntas e os limiares da escala são calibrados por máxima verossimilhança
 conjunta com todas as respostas do teste ("pessoa" = paciente × quem respondeu). O θ de cada visão sai por EAP (priori normal)
-com erro-padrão e percentil aproximado. A calibração exige ao menos 10 pessoas por habilidade e é marcada como instável abaixo
+com erro-padrão e percentil aproximado. A calibração exige ao menos 10 pessoas por classificação e é marcada como instável abaixo
 de ~70. Em *Análise* aparecem, por pergunta, a dificuldade e o ajuste (infit/outfit; fora de 0,7–1,3 indica pergunta ambígua ou
-redundante), além da confiabilidade de cada habilidade. Numa simulação com 80 pacientes, a calibração recuperou as dificuldades
+redundante), além da confiabilidade de cada classificação. Numa simulação com 80 pacientes, a calibração recuperou as dificuldades
 reais com r = 0,91 e os θ com r = 0,86.
 
 ### Análise (`/painel/analise`)
 
-- **Correlação** de Spearman (padrão) ou Pearson entre as habilidades, uma observação por paciente, na visão escolhida
+- **Correlação** de Spearman (padrão) ou Pearson entre as classificações, uma observação por paciente, na visão escolhida
   (paciente sobre si, mãe/pai, terapeuta ou todas as visões sobre o paciente).
 - **Grupos de perfis**: k-means (2 a 5 grupos) sobre os percentuais, com mapa em PCA e silhueta. Só a equipe vê; pacientes e
   famílias nunca veem grupos.
@@ -92,7 +111,7 @@ reais com r = 0,91 e os θ com r = 0,86.
 
 ### Cobertura mínima
 
-O editor de testes avisa quando alguma habilidade tem menos de **3 perguntas ativas** para um público usado nas etapas
+O editor de testes avisa quando alguma classificação tem menos de **3 perguntas ativas** para um público usado nas etapas
 (paciente sobre si, sobre o outro, mãe/pai, terapeuta): abaixo disso a medida não tem validade estatística.
 
 ## Como os vieses são reduzidos
@@ -109,7 +128,9 @@ cp .env.example .env.local   # defina SESSION_SECRET, ADMIN_EMAIL e ADMIN_PASSWO
 npm run dev
 ```
 
-Sem `ADMIN_EMAIL`/`ADMIN_PASSWORD`. **Troque antes de publicar.**
+Na primeira execução é criada a conta de administrador de `ADMIN_EMAIL`/`ADMIN_PASSWORD`; sem elas, o banco nasce com e-mail vazio e senha
+`admin`. **Troque antes de publicar.** Para o botão "Falar com a equipe" da página inicial, defina `CONTACT_URL`
+(`mailto:`, link do WhatsApp ou formulário).
 
 ### Símbolos com IA
 
@@ -127,7 +148,7 @@ dados no **Prisma Postgres** e SVGs dos símbolos no **Vercel Blob**, os dois li
 | `DATABASE_URL`          | Criada pela integração Prisma Postgres |
 | `BLOB_STORE_ID`         | Criada pelo Vercel Blob (autentica por OIDC, sem token fixo) |
 | `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Definir à mão em *Settings → Environment Variables* |
-| `ANTHROPIC_API_KEY`     | Opcional |
+| `ANTHROPIC_API_KEY`, `CONTACT_URL` | Opcionais |
 
 No deploy, o script `vercel-build` roda `prisma generate`, depois `prisma migrate deploy` e por fim `next build`.
 Assim a tabela é criada ou atualizada antes de o app subir.

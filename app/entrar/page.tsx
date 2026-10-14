@@ -14,7 +14,7 @@ export default async function Entrar() {
         <Link href="/" className="brand" style={{ marginBottom: 6 }}>
           <BrandMark large />
         </Link>
-        <p className="hand" style={{ margin: "0 0 20px" }}>habilidades fora da caixa</p>
+        <p className="hand" style={{ margin: "0 0 20px" }}>acompanhamento por meio de testes</p>
         <div className="card">
           <LoginForm />
         </div>

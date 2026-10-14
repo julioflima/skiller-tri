@@ -15,7 +15,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <p className="brand" style={{ marginBottom: 6 }}>
           <BrandMark large />
         </p>
-        <p className="hand" style={{ margin: "0 0 20px" }}>habilidades fora da caixa</p>
+        <p className="hand" style={{ margin: "0 0 20px" }}>acompanhamento por meio de testes</p>
         <div className="card">
           {invite ? (
             <AcceptInviteForm
