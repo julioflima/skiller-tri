@@ -1,0 +1,96 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { CopyLink } from "@/app/components/CopyLink";
+import { useToast } from "@/app/components/useToast";
+import { createInvite, renewInvite, revokeInvite } from "../invite-actions";
+
+type PendingInvite = { id: string; token: string; email: string; name: string; role: "admin" | "terapeuta"; expiresAt: string; expired: boolean };
+
+export function InviteSection({ invites }: { invites: PendingInvite[] }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [pending, start] = useTransition();
+  const [form, setForm] = useState({ name: "", email: "", role: "admin" as "admin" | "terapeuta" });
+
+  function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>, onOk?: () => void) {
+    start(async () => {
+      const res = await action();
+      if (!res.ok) return toast.show(res.error);
+      toast.show(res.message ?? "Feito.");
+      onOk?.();
+      router.refresh();
+    });
+  }
+
+  return (
+    <section className="card alt">
+      {toast.node}
+      <h2>Convidar por link</h2>
+      <p className="muted small">
+        Gere um link, copie e envie para a pessoa. Por ele, ela cria a própria conta com nome e senha. O link vale 7 dias e serve para
+        uma conta só. Com o e-mail preenchido, só essa pessoa consegue usá-lo.
+      </p>
+      <form
+        className="row tight"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(() => createInvite(form), () => setForm({ name: "", email: "", role: form.role }));
+        }}
+      >
+        <input type="text" placeholder="Nome (opcional)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ flex: 1, minWidth: 160 }} />
+        <input type="email" placeholder="E-mail (opcional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ flex: 2, minWidth: 200 }} />
+        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "terapeuta" })} aria-label="Papel" style={{ flex: 1, minWidth: 150 }}>
+          <option value="admin">Administrador</option>
+          <option value="terapeuta">Terapeuta</option>
+        </select>
+        <button className="btn warm sm" disabled={pending}>
+          {pending ? "Gerando…" : "Gerar link"}
+        </button>
+      </form>
+
+      {invites.length > 0 && (
+        <div className="table-wrap" style={{ marginTop: 18 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Convite pendente</th>
+                <th>Link</th>
+                <th>Validade</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((i) => (
+                <tr key={i.id}>
+                  <td>
+                    {i.name && <strong>{i.name} </strong>}
+                    <span className="small">{i.email || "qualquer e-mail"}</span>
+                    <div className="faint small">{i.role === "admin" ? "administrador" : "terapeuta"}</div>
+                  </td>
+                  <td style={{ maxWidth: 360 }}>{i.expired ? <span className="faint small">gere um novo link</span> : <CopyLink path={`/convite/${i.token}`} />}</td>
+                  <td>
+                    {i.expired ? (
+                      <span className="pill low">expirado</span>
+                    ) : (
+                      <span className="small">até {new Date(i.expiresAt).toLocaleDateString("pt-BR")}</span>
+                    )}
+                  </td>
+                  <td className="row" style={{ gap: 6, justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                    <button type="button" className="btn ghost sm" disabled={pending} onClick={() => run(() => renewInvite(i.id))}>
+                      Novo link
+                    </button>
+                    <button type="button" className="btn ghost sm danger" disabled={pending} onClick={() => run(() => revokeInvite(i.id))}>
+                      Cancelar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}

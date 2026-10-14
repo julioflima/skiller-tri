@@ -1,0 +1,23 @@
+// Banco no Prisma Postgres (Vercel Storage).
+// Cada entidade do app (lib/types.ts → Db) vira uma linha em `Record`: a coleção ("users",
+// "tests", "patients", "sessions", "forms"…) + o id do item + o objeto em JSON.
+// Assim o lib/db.ts mantém a interface readDb()/updateDb() e o modelo de dados pode mudar
+// sem exigir migração de tabela; só as linhas alteradas são gravadas.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Record {
+  collection String
+  id         String
+  data       Json
+  updatedAt  DateTime @updatedAt
+
+  @@id([collection, id])
+}

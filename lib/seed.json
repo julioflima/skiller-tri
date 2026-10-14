@@ -1,0 +1,189 @@
+{
+  "scale": [
+    {
+      "value": 0,
+      "label": "Não demonstrou",
+      "description": "não apresentou o comportamento ou apresentou o oposto."
+    },
+    {
+      "value": 1,
+      "label": "Demonstrou com muita dificuldade",
+      "description": "precisou de intervenção significativa."
+    },
+    {
+      "value": 2,
+      "label": "Demonstrou parcialmente",
+      "description": "apresentou o comportamento, mas de maneira inconsistente."
+    },
+    {
+      "value": 3,
+      "label": "Demonstrou adequadamente",
+      "description": "realizou de maneira espontânea e funcional."
+    },
+    {
+      "value": 4,
+      "label": "Demonstrou de forma elaborada",
+      "description": "além de realizar, ajudou o grupo a desenvolver a habilidade."
+    }
+  ],
+  "skills": [
+    {
+      "name": "Pertencimento e vínculos",
+      "questions": [
+        "Considera as necessidades dos outros membros do grupo.",
+        "Demonstra preocupação com a permanência dos integrantes no grupo.",
+        "Evita tomar decisões exclusivamente em benefício próprio.",
+        "Percebe que determinadas escolhas podem fortalecer ou enfraquecer vínculos.",
+        "Considera o impacto emocional de excluir alguém.",
+        "Demonstra disposição para preservar relações mesmo diante de discordâncias.",
+        "Consegue pensar em soluções que contemplem diferentes pessoas."
+      ]
+    },
+    {
+      "name": "Autoconhecimento",
+      "questions": [
+        "Identifica habilidades pessoais que poderiam ser úteis na situação.",
+        "Reconhece características pessoais que poderiam atrapalhar.",
+        "Reconhece seus próprios limites.",
+        "Consegue explicar por que determinada função seria ou não adequada para si.",
+        "Diferencia aquilo que gostaria de fazer daquilo que efetivamente consegue fazer.",
+        "Reconhece situações em que tende a reagir impulsivamente.",
+        "Consegue reconsiderar sua própria atuação após ouvir os demais."
+      ]
+    },
+    {
+      "name": "Reconhecimento e expressão emocional",
+      "questions": [
+        "Identifica emoções presentes na situação.",
+        "Diferencia emoções semelhantes, como medo, ansiedade, raiva e desespero.",
+        "Consegue explicar o que provocou determinada emoção.",
+        "Reconhece emoções próprias durante a discussão.",
+        "Comunica como está se sentindo sem simplesmente atacar os outros.",
+        "Percebe mudanças emocionais ao longo da atividade.",
+        "Consegue relacionar emoção, pensamento e comportamento."
+      ]
+    },
+    {
+      "name": "Autorregulação",
+      "questions": [
+        "Mantém o raciocínio mesmo diante de pressão.",
+        "Não reage imediatamente quando é contrariado.",
+        "Consegue esperar antes de responder.",
+        "Controla alterações excessivas de tom ou comportamento.",
+        "Consegue reconsiderar uma decisão tomada sob pressão.",
+        "Tolera ouvir opiniões contrárias.",
+        "Consegue separar emoção imediata de decisão final.",
+        "Procura informações antes de agir impulsivamente."
+      ]
+    },
+    {
+      "name": "Autonomia e autocuidado",
+      "questions": [
+        "Identifica riscos presentes na situação.",
+        "Considera a própria segurança antes de agir.",
+        "Reconhece quando uma situação ultrapassa seus limites.",
+        "Evita comportamentos desnecessariamente arriscados.",
+        "Considera consequências de curto e longo prazo.",
+        "Reconhece quando precisa pedir ajuda.",
+        "Assume responsabilidade pelas próprias escolhas.",
+        "Diferencia coragem de comportamento imprudente."
+      ]
+    },
+    {
+      "name": "Comunicação",
+      "questions": [
+        "Explica claramente sua proposta.",
+        "Apresenta argumentos para justificar sua escolha.",
+        "Escuta os argumentos dos demais.",
+        "Faz perguntas para compreender opiniões diferentes.",
+        "Não interrompe constantemente.",
+        "Consegue discordar sem atacar a pessoa.",
+        "Modifica ou aperfeiçoa sua proposta diante de bons argumentos.",
+        "Consegue negociar uma alternativa.",
+        "Explica os critérios utilizados pelo grupo para decidir."
+      ]
+    },
+    {
+      "name": "Empatia e respeito às diferenças",
+      "questions": [
+        "Reconhece que pessoas diferentes podem contribuir de maneiras diferentes.",
+        "Evita concluir que alguém é “inútil” por possuir uma característica difícil.",
+        "Identifica possíveis competências escondidas em uma pessoa.",
+        "Considera necessidades diferentes das suas.",
+        "Tenta compreender o ponto de vista de alguém com quem discorda.",
+        "Evita ridicularizar, desqualificar ou excluir.",
+        "Consegue transformar uma diferença em possível recurso para o grupo."
+      ]
+    },
+    {
+      "name": "Cooperação",
+      "questions": [
+        "Considera o objetivo coletivo.",
+        "Distribui tarefas de maneira funcional.",
+        "Percebe quais pessoas possuem habilidades complementares.",
+        "Evita concentrar todas as decisões em uma única pessoa.",
+        "Aceita receber tarefas que não são suas preferidas.",
+        "Oferece ajuda aos demais.",
+        "Solicita ajuda quando necessário.",
+        "Adapta sua atuação às necessidades do grupo.",
+        "Prioriza soluções que beneficiam o funcionamento coletivo."
+      ]
+    },
+    {
+      "name": "Resolução de conflitos e responsabilidade",
+      "questions": [
+        "Identifica o motivo real do conflito.",
+        "Consegue explicar sua própria posição sem simplesmente culpar alguém.",
+        "Reconhece sua participação em um problema.",
+        "Assume responsabilidade quando contribuiu para o conflito.",
+        "Escuta a posição da outra pessoa.",
+        "Procura interesses comuns.",
+        "Propõe alternativas em vez de apenas apontar problemas.",
+        "Aceita fazer concessões razoáveis.",
+        "Consegue chegar a algum acordo."
+      ]
+    },
+    {
+      "name": "Criatividade e resolução de problemas",
+      "questions": [
+        "Identifica claramente o problema.",
+        "Produz mais de uma possibilidade de solução.",
+        "Não abandona a tentativa diante da primeira dificuldade.",
+        "Utiliza recursos disponíveis de maneira diferente.",
+        "Combina ideias de diferentes participantes.",
+        "Considera consequências de cada alternativa.",
+        "Consegue modificar uma estratégia que não funcionou.",
+        "Propõe soluções que não dependem simplesmente de “escolher alguém”.",
+        "Consegue trabalhar com informações incompletas."
+      ]
+    },
+    {
+      "name": "Tomada de decisão e liderança compartilhada",
+      "questions": [
+        "Define critérios antes de escolher.",
+        "Considera informações relevantes antes da decisão.",
+        "Compara vantagens e desvantagens das alternativas.",
+        "Considera consequências da escolha.",
+        "Escuta diferentes opiniões.",
+        "Consegue defender uma decisão sem impor sua vontade.",
+        "Distribui responsabilidades.",
+        "Aceita que outra pessoa assuma determinada liderança.",
+        "Assume responsabilidade pela decisão coletiva.",
+        "Reavalia a decisão quando surgem novas informações."
+      ]
+    },
+    {
+      "name": "Responsabilidade e participação social",
+      "questions": [
+        "Considera consequências individuais e coletivas.",
+        "Percebe que sua escolha pode afetar pessoas que não participaram da decisão.",
+        "Considera consequências de curto e longo prazo.",
+        "Demonstra preocupação com justiça ou distribuição de responsabilidades.",
+        "Evita transferir automaticamente a responsabilidade para outras pessoas.",
+        "Assume consequências de suas escolhas.",
+        "Considera regras ou acordos coletivos.",
+        "Consegue explicar por que determinada escolha seria socialmente responsável."
+      ]
+    }
+  ]
+}

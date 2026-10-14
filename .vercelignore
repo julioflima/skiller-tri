@@ -1,0 +1,10 @@
+# Nunca enviar dados locais nem segredos no deploy pela CLI
+data/
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+lib/generated/
+*.tsbuildinfo
+.claude/
