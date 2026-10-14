@@ -8,10 +8,10 @@ export default async function NewPatientPage({ searchParams }: { searchParams: P
   const user = await requirePageUser();
   const { escola } = await searchParams;
   const db = await readDb();
-  // ?escola= (vindo da página da escola) deixa essa escola pré-selecionada
   const schools = schoolOptions(db, user)
     .filter((s) => s.tests.length && s.therapists.length)
-    .sort((a, b) => Number(b.id === escola) - Number(a.id === escola));
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  // ?escola= (vindo da página da escola) deixa essa escola pré-selecionada; sem ele, o admin escolhe
   return (
     <div className="stack">
       <Link href="/painel" className="faint">
@@ -19,7 +19,7 @@ export default async function NewPatientPage({ searchParams }: { searchParams: P
       </Link>
       <h1>Novo paciente</h1>
       {schools.length ? (
-        <PatientForm schools={schools} isAdmin={user.role === "admin"} />
+        <PatientForm schools={schools} isAdmin={user.role === "admin"} defaultSchoolId={escola} />
       ) : (
         <p className="muted">
           {user.role === "admin"
