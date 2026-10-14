@@ -60,7 +60,6 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         {tab("etapas", "Etapas")}
         {tab("dados", "Dados do teste")}
         {tab("landing", "Landing page")}
-        {tab("configuracao", "Configuração")}
       </nav>
 
       {aba === "landing" ? (
@@ -111,17 +110,18 @@ export default async function TestPage({ params, searchParams }: { params: Promi
           poolSizes={Object.fromEntries(test.stages.flatMap((s) => s.rules.map((r) => [r.id, poolFor(test, r).length])))}
         />
       ) : aba === "dados" ? (
-        <TestMetaEditor
-          test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
+        <>
+          <TestMetaEditor
+            test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
           defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
-        />
-      ) : aba === "configuracao" ? (
-        <ArchiveTestSection
-          testId={test.id}
-          name={test.name}
-          patients={db.patients.filter((p) => p.testId === test.id && !p.archived).length}
-          forms={db.forms.filter((f) => f.testId === test.id).length}
-        />
+          />
+          <ArchiveTestSection
+            testId={test.id}
+            name={test.name}
+            patients={db.patients.filter((p) => p.testId === test.id && !p.archived).length}
+            forms={db.forms.filter((f) => f.testId === test.id).length}
+          />
+        </>
       ) : (
         <QuestionsEditor
           testId={test.id}

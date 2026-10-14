@@ -565,7 +565,6 @@ export function TestMetaEditor({
   );
 }
 
-// ---------------- configuração ----------------
 
 /** Arquivar o teste em duas confirmações: primeiro o que muda, depois a senha de quem arquiva. */
 export function ArchiveTestSection({ testId, name, patients, forms }: { testId: string; name: string; patients: number; forms: number }) {
@@ -581,7 +580,7 @@ export function ArchiveTestSection({ testId, name, patients, forms }: { testId: 
   return (
     <section className="card stack">
       {toast.node}
-      <h2 style={{ margin: 0 }}>Arquivar</h2>
+      <h2 style={{ margin: 0 }}>Arquivar teste</h2>
       <p className="muted" style={{ margin: 0 }}>
         O teste sai do painel, das escolas e da landing, e os pacientes que o usam são arquivados com o histórico guardado. Dá para restaurar
         depois na aba Arquivo da lista de testes.
