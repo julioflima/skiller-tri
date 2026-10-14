@@ -135,8 +135,9 @@ export async function saveLanding(id: string, input: TestLanding) {
     if (!SLUG.test(slug)) fail("O endereço usa só letras minúsculas, números e hífen (até 40).");
     const text = (v: string) => (v ?? "").trim();
     for (const url of [input.logoUrl, input.heroImageUrl].map(text)) if (url && !imageOk(id, url)) fail("Imagem inválida: envie a imagem pelo botão Enviar.");
-    const contactUrl = text(input.contactUrl);
-    if (contactUrl && !/^https:\/\/wa\.me\/\d{10,15}(\?text=\S*)?$/.test(contactUrl)) fail("WhatsApp inválido: use DDI + DDD + número, só dígitos (ex.: 5511999999999).");
+    // link do WhatsApp; espaços da mensagem viram %20 para o link funcionar
+    const contactUrl = text(input.contactUrl).replace(/ /g, "%20");
+    if (contactUrl && !/^https:\/\/wa\.me\/\d{10,15}(\?text=\S*)?$/.test(contactUrl)) fail("Use o formato https://wa.me/<número>?text=<mensagem>, com o número só em dígitos (DDI + DDD).");
     if (input.published && !text(input.headline)) fail("Escreva o título antes de publicar.");
     const replaced = await updateDb((db) => {
       const t = getTest(db, id);

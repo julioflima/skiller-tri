@@ -586,38 +586,6 @@ const LANDING_FIELDS: { key: keyof TestLanding; label: string; hint?: string; lo
   { key: "skillsLead", label: "Texto da seção das classificações", long: true },
 ];
 
-const WA_MESSAGE = "Olá! Vi a página do teste e quero saber mais.";
-
-/** Lê número e mensagem de um link https://wa.me/<número>?text=<mensagem>. */
-function parseWhatsApp(url: string) {
-  const m = /^https:\/\/wa\.me\/(\d+)(?:\?text=(.*))?$/.exec(url);
-  return m ? { phone: m[1], message: decodeURIComponent(m[2] ?? "") } : { phone: "", message: WA_MESSAGE };
-}
-
-/** Botão "Falar com a equipe": link do WhatsApp com número e mensagem prontos. Sem número = contato geral da plataforma. */
-function WhatsAppField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
-  const [wa, setWa] = useState(() => parseWhatsApp(value));
-  const update = (next: typeof wa) => {
-    setWa(next);
-    const digits = next.phone.replace(/\D/g, "");
-    onChange(digits ? `https://wa.me/${digits}${next.message.trim() ? `?text=${encodeURIComponent(next.message.trim())}` : ""}` : "");
-  };
-  return (
-    <div className="grid-2" style={{ gap: 14 }}>
-      <div>
-        <label htmlFor="lp-wa-phone">WhatsApp do botão &quot;Falar com a equipe&quot;</label>
-        <input id="lp-wa-phone" type="tel" inputMode="numeric" placeholder="5511999999999" value={wa.phone} onChange={(e) => update({ ...wa, phone: e.target.value })} />
-        <p className="faint">Com DDI e DDD, só números (ex.: 5511999999999). Vazio = contato geral da plataforma.</p>
-      </div>
-      <div>
-        <label htmlFor="lp-wa-msg">Mensagem inicial</label>
-        <input id="lp-wa-msg" type="text" value={wa.message} onChange={(e) => update({ ...wa, message: e.target.value })} />
-        <p className="faint">Já vem escrita na conversa; a pessoa só envia.</p>
-      </div>
-    </div>
-  );
-}
-
 /** Imagem da landing: enviada para a pasta do teste no storage; o endereço vai para o formulário e fica salvo com a landing. */
 function ImageField({
   testId,
@@ -739,7 +707,17 @@ export function LandingEditor({ testId, landing, suggestedSlug }: { testId: stri
           {hint && <p className="faint">{hint}</p>}
         </div>
       ))}
-      <WhatsAppField value={f.contactUrl} onChange={(contactUrl) => setF({ ...f, contactUrl })} />
+      <div>
+        <label htmlFor="lp-contact">WhatsApp do botão &quot;Falar com a equipe&quot;</label>
+        <input
+          id="lp-contact"
+          type="url"
+          placeholder="https://wa.me/5511999999999?text=Olá! Vi a página do teste e quero saber mais."
+          value={f.contactUrl}
+          onChange={(e) => setF({ ...f, contactUrl: e.target.value })}
+        />
+        <p className="faint">https://wa.me/&lt;número&gt;?text=&lt;mensagem&gt; · número com DDI e DDD. Vazio = contato geral da plataforma.</p>
+      </div>
       <div className="row">
         <button className="btn" disabled={pending} onClick={() => run(() => saveLanding(testId, f))}>
           Salvar

@@ -44,7 +44,7 @@ Marca, mascote e slogan de um teste não aparecem fora da landing dele.
 
 ## Landing dos testes
 
-Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. O botão "Falar com a equipe" usa um link do WhatsApp (`wa.me`) montado com número e mensagem inicial. O logo e a imagem de
+Em *Testes → Landing page*: endereço, publicação, título, textos, logo, imagem de destaque e contato. O botão "Falar com a equipe" usa um link do WhatsApp no formato `https://wa.me/<número>?text=<mensagem>`. O logo e a imagem de
 destaque são enviados pelo botão *Enviar* para a pasta do teste no Vercel Blob (`testes/<id>/landing/`, store privado) e servidos
 por `/arquivos/...`; imagens trocadas ou removidas são apagadas ao salvar. *Ver landing page* (no topo do teste) abre a página ou a
 prévia do rascunho. As classificações, quem
