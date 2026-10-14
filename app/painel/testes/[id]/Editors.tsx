@@ -711,7 +711,8 @@ export function LandingEditor({ testId, landing, suggestedSlug }: { testId: stri
         <label htmlFor="lp-contact">WhatsApp do botão &quot;Falar com a equipe&quot;</label>
         <input
           id="lp-contact"
-          type="url"
+          type="text"
+          inputMode="url"
           placeholder="https://wa.me/5511999999999?text=Olá! Vi a página do teste e quero saber mais."
           value={f.contactUrl}
           onChange={(e) => setF({ ...f, contactUrl: e.target.value })}
