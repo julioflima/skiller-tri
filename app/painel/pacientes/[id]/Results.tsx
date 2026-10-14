@@ -163,7 +163,7 @@ export function Results({
           {!irtCats.length ? (
             <p className="muted small" style={{ margin: 0 }}>
               Ainda não há respostas suficientes no teste para calibrar as perguntas (mínimo de 10 aplicações por habilidade, sem contar quem marcou só
-              o mínimo ou só o máximo). Veja <Link href={`/painel/analise?teste=${test.id}`}>Análise</Link>.
+              o mínimo ou só o máximo). Veja <Link href="/painel/metodos#tri">Métodos</Link>.
             </p>
           ) : (
             <>

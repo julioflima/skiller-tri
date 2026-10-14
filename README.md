@@ -13,10 +13,11 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/teste/<endereço>` | público | Landing de um teste (ex.: `/teste/kay12`). Rascunho: `?previa=1`, só para admin. |
 | `/entrar` | equipe | Login com e-mail e senha. |
 | `/painel` | escola | Pacientes da escola (administrador) ou os próprios (terapeuta): sessões, resultados e CSV. O dono vai para Escolas. |
-| `/painel/analise` | todos | Correlação entre classificações, grupos de perfis, calibração TRI e tempo de resposta por pergunta, no escopo de cada um. |
+| `/painel/analise` | escola | Análise da escola: correlação entre classificações e grupos de perfis (o terapeuta, só com os próprios pacientes). O dono vê a mesma análise na aba Análise de cada escola. |
+| `/painel/metodos` | todos | Explica os métodos (percentual, TRI e os outros modelos da família, correlação, grupos, tempos), onde aparecem e quantos dados pedem. Não mostra dados. |
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
-| `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Equipe e Dados e testes. |
-| `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
+| `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Análise, Equipe e Dados e testes. |
+| `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (calibração TRI e tempos, com as aplicações de todas as escolas) e landing page. |
 | `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
@@ -101,17 +102,20 @@ Ao lado do percentual, cada classificação ganha uma estimativa pelo **modelo d
 unidimensional por classificação. As dificuldades das perguntas e os limiares da escala são calibrados por máxima verossimilhança
 conjunta com todas as respostas do teste ("pessoa" = paciente × quem respondeu). O θ de cada visão sai por EAP (priori normal)
 com erro-padrão e percentil aproximado. A calibração exige ao menos 10 pessoas por classificação e é marcada como instável abaixo
-de ~70. Em *Análise* aparecem, por pergunta, a dificuldade e o ajuste (infit/outfit; fora de 0,7–1,3 indica pergunta ambígua ou
+de ~70. Na aba *Qualidade* do teste aparecem, por pergunta, a dificuldade e o ajuste (infit/outfit; fora de 0,7–1,3 indica pergunta ambígua ou
 redundante), além da confiabilidade de cada classificação. Numa simulação com 80 pacientes, a calibração recuperou as dificuldades
 reais com r = 0,91 e os θ com r = 0,86.
 
-### Análise (`/painel/analise`)
+### Análise da escola e qualidade do teste
+
+A análise de pacientes fica dentro da escola; a qualidade das perguntas, dentro do teste.
+
 
 - **Correlação** de Spearman (padrão) ou Pearson entre as classificações, uma observação por paciente, na visão escolhida
   (paciente sobre si, mãe/pai, terapeuta ou todas as visões sobre o paciente).
 - **Grupos de perfis**: k-means (2 a 5 grupos) sobre os percentuais, com mapa em PCA e silhueta. Só a equipe vê; pacientes e
   famílias nunca veem grupos.
-- **Tempo de resposta**: o questionário mede o tempo com a aba visível até a escolha (somando as revisões) e quantas vezes a
+- **Tempo de resposta** (aba Qualidade do teste): o questionário mede o tempo com a aba visível até a escolha (somando as revisões) e quantas vezes a
   resposta foi trocada. A análise mostra a mediana por pergunta e a parcela de respostas rápidas demais (menos de 1,5 s).
   O tempo também aparece em cada formulário e no CSV.
 

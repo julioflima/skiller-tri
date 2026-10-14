@@ -4,15 +4,17 @@ import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { TeamSection } from "../../equipe/TeamSection";
 import { SchoolSettings } from "../SchoolEditor";
+import { SchoolAnalysis, type AnalysisSearch } from "../../analise/SchoolAnalysis";
 
-export default async function SchoolPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
+export default async function SchoolPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string } & AnalysisSearch> }) {
   const me = await requirePageUser({ admin: true });
   const { id } = await params;
   const db = await readDb();
   const school = db.schools.find((s) => s.id === id);
   if (!school) notFound();
   // escola recém-criada, sem testes, abre no que falta configurar
-  const { aba = school.testIds.length ? "pacientes" : "dados" } = await searchParams;
+  const sp = await searchParams;
+  const { aba = school.testIds.length ? "pacientes" : "dados" } = sp;
 
   const users = new Map(db.users.map((u) => [u.id, u]));
   const tests = new Map(db.tests.map((t) => [t.id, t]));
@@ -38,6 +40,7 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
       </div>
       <nav className="tabs" style={{ marginBottom: 0 }}>
         {tab("pacientes", `Pacientes (${patients.length})`)}
+        {tab("analise", "Análise")}
         {tab("equipe", `Equipe (${team})`)}
         {tab("dados", "Dados e testes")}
       </nav>
@@ -54,6 +57,8 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
           }}
           tests={db.tests.filter((t) => !t.deletedAt).map((t) => ({ id: t.id, name: t.name, active: t.active }))}
         />
+      ) : aba === "analise" ? (
+        <SchoolAnalysis db={db} user={me} school={school} sp={sp} path={`/painel/escolas/${school.id}`} base={{ aba: "analise" }} />
       ) : aba !== "equipe" ? (
         <section className="card stack">
           <div className="row spread">

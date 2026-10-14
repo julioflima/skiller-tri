@@ -8,6 +8,7 @@ import { DEFAULT_SYMBOL_PROMPT, symbolPromptFor } from "@/lib/symbols";
 import { ArchiveTestSection, CategoriesEditor, LandingEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
 import { QuestionsEditor } from "./QuestionsEditor";
 import { Coverage } from "./Coverage";
+import { Quality } from "./Quality";
 import { TestChat } from "./TestChat";
 
 // o assistente pode encadear várias chamadas à IA numa única ação
@@ -58,6 +59,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         {tab("classificacoes", `Classificações (${test.categories.length})`)}
         {tab("respostas", "Respostas e pesos")}
         {tab("etapas", "Etapas")}
+        {tab("qualidade", "Qualidade")}
         {tab("dados", "Dados do teste")}
         {tab("landing", "Landing page")}
       </nav>
@@ -108,6 +110,12 @@ export default async function TestPage({ params, searchParams }: { params: Promi
           stages={test.stages}
           categories={categories.map((c) => ({ id: c.id, name: c.name }))}
           poolSizes={Object.fromEntries(test.stages.flatMap((s) => s.rules.map((r) => [r.id, poolFor(test, r).length])))}
+        />
+      ) : aba === "qualidade" ? (
+        <Quality
+          test={test}
+          forms={db.forms.filter((f) => f.testId === test.id)}
+          schools={new Set(db.patients.filter((p) => p.testId === test.id).map((p) => p.schoolId)).size}
         />
       ) : aba === "dados" ? (
         <>

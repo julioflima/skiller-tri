@@ -12,12 +12,18 @@ export default async function PainelLayout({ children }: { children: React.React
   const user = await requirePageUser();
   const db = await readDb();
   const school = user.schoolId ? db.schools.find((s) => s.id === user.schoolId) : undefined;
-  // dono: plataforma (pacientes ficam dentro de cada escola); administrador da escola: pacientes e equipe; terapeuta: pacientes e análise
+  // dono: plataforma (pacientes e análise ficam dentro de cada escola); administrador da escola: pacientes, análise e equipe;
+  // terapeuta: pacientes e análise. Métodos explica os métodos para todos, sem dados.
   const links = [
-    ...(user.role === "admin" ? [{ href: "/painel/escolas", label: "Escolas" }] : [{ href: "/painel", label: "Pacientes" }]),
-    { href: "/painel/analise", label: "Análise" },
+    ...(user.role === "admin"
+      ? [{ href: "/painel/escolas", label: "Escolas" }]
+      : [
+          { href: "/painel", label: "Pacientes" },
+          { href: "/painel/analise", label: "Análise" },
+        ]),
     ...(user.role === "gestor" ? [{ href: "/painel/equipe", label: "Equipe" }] : []),
     ...(user.role === "admin" ? [{ href: "/painel/testes", label: "Testes" }] : []),
+    { href: "/painel/metodos", label: "Métodos" },
     // minha conta e, para o dono, os donos da plataforma
     { href: "/painel/configuracoes", label: "Configurações" },
   ];
