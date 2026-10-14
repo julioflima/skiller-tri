@@ -113,7 +113,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         <>
           <TestMetaEditor
             test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
-          defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
+            defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
           />
           <ArchiveTestSection
             testId={test.id}
