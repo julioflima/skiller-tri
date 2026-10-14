@@ -23,8 +23,8 @@ export type ChatTurn = { role: "user" | "assistant"; text: string };
 export type ChatReply = { text: string; changes: { ok: boolean; label: string }[] };
 
 const MAX_STEPS = 15;
-/** Edita o teste em várias etapas com ferramentas: precisa do raciocínio do Opus. */
-const MODEL = "claude-opus-5-5";
+/** Sonnet: bom o bastante para editar o teste com ferramentas e bem mais barato que o Opus. */
+const MODEL = "claude-sonnet-5-5";
 
 const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma Skiller TRI, usado por terapeutas.
 Você conversa em português (Brasil) com a pessoa administradora e altera o teste usando as ferramentas disponíveis.
