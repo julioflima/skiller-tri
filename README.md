@@ -17,14 +17,13 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
 | `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Equipe e Dados e testes. |
 | `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas e landing page. |
-| `/painel/donos` | dono | Donos da plataforma (convite por link). |
+| `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
 ## Escolas e papéis
 
 - **Dono** (`admin`): do Skiller TRI. Não pertence a escola; cria testes, escolas e convida outros donos. Vê os pacientes dentro de
-  cada escola (não há lista global) e pode **ver como** uma escola inteira ou qualquer pessoa dela (seletor no cabeçalho ou botões na
-  página da escola), com uma faixa para voltar. A própria conta e a senha continuam sendo as dele.
+  cada escola (não há lista global).
 - **Administrador da escola** (`gestor`): cadastra e edita pacientes, escolhe o terapeuta, gera os links e cuida da equipe da própria
   escola (*Equipe*). Não é terapeuta de paciente.
 - **Terapeuta**: só responde os testes e faz a análise dos próprios pacientes (resultados, sessões, anotações e o próprio link).

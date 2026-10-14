@@ -1,6 +1,6 @@
 "use server";
 
-import { canManageTeam, requireRealUser, requireUser } from "@/lib/auth";
+import { canManageTeam, requireUser } from "@/lib/auth";
 import { isSchoolRole, ROLE_LABEL, type Role } from "@/lib/roles";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -110,7 +110,7 @@ export async function resetUserPassword(id: string, password: string) {
 
 export async function changeOwnName(name: string) {
   return guard(async () => {
-    const me = await requireRealUser();
+    const me = await requireUser();
     const clean = name.trim();
     if (!clean) fail("Informe o nome.");
     await updateDb((db) => {
@@ -123,7 +123,7 @@ export async function changeOwnName(name: string) {
 
 export async function changeOwnPassword(current: string, next: string) {
   return guard(async () => {
-    const me = await requireRealUser();
+    const me = await requireUser();
     checkPassword(next);
     const db = await readDb();
     const u = db.users.find((x) => x.id === me.id);
@@ -139,7 +139,7 @@ export async function changeOwnPassword(current: string, next: string) {
 
 export async function regenerateTherapistLink() {
   return guard(async () => {
-    const me = await requireRealUser();
+    const me = await requireUser();
     await updateDb((db) => {
       const u = db.users.find((x) => x.id === me.id);
       if (u) u.token = newToken();

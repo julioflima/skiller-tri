@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { TeamSection } from "../../equipe/TeamSection";
-import { impersonate } from "../../impersonate-actions";
 import { SchoolSettings } from "../SchoolEditor";
 
 export default async function SchoolPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aba?: string }> }) {
@@ -35,9 +34,6 @@ export default async function SchoolPage({ params, searchParams }: { params: Pro
         <h1 style={{ margin: 0 }}>{school.name}</h1>
         <div className="row">
           {school.active ? <span className="pill high">ativa</span> : <span className="pill">inativa</span>}
-          <form action={impersonate.bind(null, { kind: "escola", id: school.id })}>
-            <button className="btn ghost sm">Ver como esta escola</button>
-          </form>
         </div>
       </div>
       <nav className="tabs" style={{ marginBottom: 0 }}>

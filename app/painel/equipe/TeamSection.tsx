@@ -30,7 +30,7 @@ export function TeamSection({ db, school, me }: { db: Db; school: School; me: Se
 
   return (
     <>
-      <MembersTable title="Equipe" members={members} meId={me.id} schools={schools} canImpersonate={isOwner && !me.impersonator} />
+      <MembersTable title="Equipe" members={members} meId={me.id} schools={schools} />
       <NewMemberForm school={ref} />
       <InviteSection invites={invites} school={ref} />
     </>

@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { realUser } from "@/lib/auth";
+import { requirePageUser } from "@/lib/auth";
 import { CopyLink } from "@/app/components/CopyLink";
 import { Icon } from "@/app/components/Icon";
 import { ActionButton } from "@/app/components/ActionButton";
@@ -8,11 +7,9 @@ import { NameForm } from "./NameForm";
 import { PasswordForm } from "./PasswordForm";
 
 export default async function AccountPage() {
-  const user = await realUser();
-  if (!user) redirect("/entrar");
+  const user = await requirePageUser();
   return (
-    <div className="stack">
-      <h1 style={{ margin: 0 }}>Minha conta</h1>
+    <>
       <section className="card">
         <NameForm name={user.name} />
         <p className="muted">{user.email}</p>
@@ -33,6 +30,6 @@ export default async function AccountPage() {
         )}
       </section>
       <PasswordForm />
-    </div>
+    </>
   );
 }

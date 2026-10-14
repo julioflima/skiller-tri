@@ -5,7 +5,6 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
 import { ROLE_LABEL, type Role, type SchoolRole } from "@/lib/roles";
-import { impersonate } from "../impersonate-actions";
 import { createUser, resetUserPassword, updateUser } from "../user-actions";
 
 export type Member = { id: string; name: string; email: string; role: Role; schoolId?: string; school?: string; active: boolean; patients: number };
@@ -78,20 +77,17 @@ export function NewMemberForm({ school }: { school: SchoolOption }) {
 
 /**
  * `schools`: para onde o dono pode mover a pessoa (vazio = não troca de escola).
- * `canImpersonate`: botão "Ver como" (só o dono, na página da escola).
  */
 export function MembersTable({
   members,
   meId,
   schools = [],
   title = "Equipe",
-  canImpersonate = false,
 }: {
   members: Member[];
   meId: string;
   schools?: SchoolOption[];
   title?: string;
-  canImpersonate?: boolean;
 }) {
   return (
     <section className="card">
@@ -99,14 +95,14 @@ export function MembersTable({
       {members.length === 0 && <p className="muted" style={{ margin: 0 }}>Ninguém cadastrado ainda.</p>}
       <div className="stack">
         {members.map((m) => (
-          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} canImpersonate={canImpersonate} />
+          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} />
         ))}
       </div>
     </section>
   );
 }
 
-function MemberRow({ m, isMe, schools, canImpersonate }: { m: Member; isMe: boolean; schools: SchoolOption[]; canImpersonate: boolean }) {
+function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: SchoolOption[] }) {
   const { run, pending, toast } = useRunner();
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, schoolId: m.schoolId, active: m.active });
@@ -166,11 +162,6 @@ function MemberRow({ m, isMe, schools, canImpersonate }: { m: Member; isMe: bool
           <span className="small">{ROLE_LABEL[m.role]}</span>
           {m.role === "terapeuta" && <span className="small faint">{m.patients} paciente(s)</span>}
           {m.active ? <span className="pill high">ativa</span> : <span className="pill low">inativa</span>}
-          {canImpersonate && m.active && inSchool && (
-            <form action={impersonate.bind(null, { kind: "usuario", id: m.id })}>
-              <button className="btn ghost sm">Ver como</button>
-            </form>
-          )}
           <button className="btn ghost sm" onClick={() => setEditing(true)}>
             Editar
           </button>

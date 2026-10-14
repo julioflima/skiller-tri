@@ -6,8 +6,6 @@ import { readDb } from "./db";
 import type { Db, User } from "./types";
 
 const COOKIE = "st_session";
-// "ver como": o dono navega como uma escola ou uma pessoa dela (valor assinado `escola:<id>` ou `usuario:<id>`)
-const AS_COOKIE = "st_as";
 const MAX_AGE = 60 * 60 * 12; // 12 horas
 
 function secret() {
@@ -36,72 +34,22 @@ export async function startSession(userId: string) {
 }
 
 export async function endSession() {
-  const jar = await cookies();
-  jar.delete(COOKIE);
-  jar.delete(AS_COOKIE);
+  (await cookies()).delete(COOKIE);
 }
 
-export type Impersonation = { kind: "escola" | "usuario"; id: string };
+export type SessionUser = Omit<User, "passwordHash">;
 
-export async function startImpersonation(target: Impersonation) {
-  const value = `${target.kind}:${target.id}`;
-  (await cookies()).set(AS_COOKIE, `${value}.${sign(value)}`, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE,
-    path: "/",
-  });
-}
-
-export async function endImpersonation() {
-  (await cookies()).delete(AS_COOKIE);
-}
-
-export type SessionUser = Omit<User, "passwordHash"> & {
-  /** "escola": a escola inteira vista pelo dono, com os poderes de administrador da escola. */
-  scope?: "escola";
-  /** Dono que está vendo como esta escola ou pessoa. */
-  impersonator?: { id: string; name: string };
-};
-
-function strip(user: User): SessionUser {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash, ...safe } = user;
-  return safe;
-}
-
-/** Quem fez login, ignorando o "ver como" (para a própria conta e para sair do modo). */
-export async function realUser(): Promise<SessionUser | null> {
+export async function currentUser(): Promise<SessionUser | null> {
   const raw = (await cookies()).get(COOKIE)?.value;
   if (!raw) return null;
   const [userId, expires, sig] = raw.split(".");
   if (!sig || !safeEqual(sig, sign(`${userId}.${expires}`)) || Number(expires) < Date.now()) return null;
   const db = await readDb();
   const user = db.users.find((u) => u.id === userId && u.active);
-  return user ? strip(user) : null;
-}
-
-/** Usuário efetivo: o próprio, ou a escola/pessoa que o dono está vendo. */
-export async function currentUser(): Promise<SessionUser | null> {
-  const real = await realUser();
-  if (real?.role !== "admin") return real;
-  const raw = (await cookies()).get(AS_COOKIE)?.value;
-  const cut = raw?.lastIndexOf(".") ?? -1;
-  if (!raw || cut < 0 || !safeEqual(raw.slice(cut + 1), sign(raw.slice(0, cut)))) return real;
-  const [kind, id] = raw.slice(0, cut).split(":");
-  const db = await readDb();
-  const impersonator = { id: real.id, name: real.name };
-  if (kind === "usuario") {
-    const t = db.users.find((u) => u.id === id && u.active && u.role !== "admin");
-    return t ? { ...strip(t), impersonator } : real;
-  }
-  if (kind === "escola") {
-    const school = db.schools.find((s) => s.id === id);
-    if (!school) return real;
-    return { id: `escola:${school.id}`, name: school.name, email: "", role: "gestor", schoolId: school.id, active: true, createdAt: school.createdAt, token: "", scope: "escola", impersonator };
-  }
-  return real;
+  if (!user) return null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { passwordHash, ...safe } = user;
+  return safe;
 }
 
 type Need = { admin?: boolean; manager?: boolean };
@@ -118,13 +66,6 @@ export async function requirePageUser(opts?: Need) {
   const user = await currentUser();
   if (!user) redirect("/entrar");
   if (!allowed(user, opts)) redirect("/painel");
-  return user;
-}
-
-/** Para a página e as ações da própria conta: quem fez login, mesmo no "ver como". */
-export async function requireRealUser() {
-  const user = await realUser();
-  if (!user) throw new Error("Sessão expirada. Entre novamente.");
   return user;
 }
 

@@ -1,7 +1,7 @@
 import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
-import { InviteSection } from "../equipe/InviteSection";
-import { MembersTable } from "../equipe/TeamManager";
+import { InviteSection } from "../../equipe/InviteSection";
+import { MembersTable } from "../../equipe/TeamManager";
 
 /** Donos do Skiller TRI. Terapeutas e administradores de escola ficam dentro de cada escola (Escolas → escola → Equipe). */
 export default async function OwnersPage() {
@@ -18,14 +18,13 @@ export default async function OwnersPage() {
     .map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active, patients: 0 }));
 
   return (
-    <div className="stack">
-      <h1 style={{ margin: 0 }}>Donos</h1>
+    <>
       <p className="muted" style={{ margin: 0 }}>
         Os donos são do Skiller TRI: criam os testes e as escolas, veem todas elas e podem ver o painel como qualquer escola ou pessoa. Terapeutas e
         administradores de escola são cadastrados dentro de cada escola.
       </p>
       <InviteSection invites={invites} />
       <MembersTable title="Donos" members={members} meId={me.id} />
-    </div>
+    </>
   );
 }
