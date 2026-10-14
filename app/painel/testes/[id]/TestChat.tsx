@@ -173,7 +173,20 @@ export function TestChat({ testId, hasKey, refs }: { testId: string; hasKey: boo
         {!messages.length && (
           <div className="chat-suggestions">
             {SUGGESTIONS.map((s) => (
-              <button key={s} className="btn sm" onClick={() => send(s)}>
+              <button
+                key={s}
+                type="button"
+                className="btn sm"
+                onClick={() => {
+                  // só coloca a frase no campo; a pessoa ajusta e envia
+                  setDraft(s);
+                  setCaret(s.length);
+                  requestAnimationFrame(() => {
+                    inputRef.current?.focus();
+                    inputRef.current?.setSelectionRange(s.length, s.length);
+                  });
+                }}
+              >
                 {s}
               </button>
             ))}
