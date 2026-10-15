@@ -364,6 +364,24 @@ export async function saveQuestion(testId: string, id: string | null, input: Que
   });
 }
 
+/** Grava de uma vez os pesos editados na matriz (perguntas × habilidades). */
+export async function saveQuestionWeights(testId: string, rows: { id: string; weight: number; skillWeights: Record<string, number> }[]) {
+  return guard(async () => {
+    await admin();
+    await updateDb((db) => {
+      const t = getTest(db, testId);
+      for (const row of rows) {
+        const q = t.questions.find((x) => x.id === row.id);
+        if (!q) fail("Pergunta não encontrada.");
+        const data = validQuestion(t, { ...q, weight: row.weight, skillWeights: row.skillWeights });
+        q.weight = data.weight;
+        q.skillWeights = data.skillWeights;
+      }
+    });
+    return rows.length === 1 ? "Pesos de 1 pergunta salvos." : `Pesos de ${rows.length} perguntas salvos.`;
+  });
+}
+
 export async function toggleQuestion(testId: string, id: string) {
   return guard(async () => {
     await admin();

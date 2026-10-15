@@ -5,10 +5,12 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
 import type { RespondentRole } from "@/lib/types";
-import { deleteQuestion, moveQuestion, saveQuestion, toggleQuestion, type QuestionInput } from "../../test-actions";
+import { deleteQuestion, moveQuestion, saveQuestion, saveQuestionWeights, toggleQuestion, type QuestionInput } from "../../test-actions";
+import { WeightRow, WeightsMatrix, withWeight } from "./WeightsMatrix";
 
 type Q = QuestionInput & { id: string; active: boolean; used: boolean };
 type Opt = { id: string; name: string };
+type Cat = Opt & { order: number };
 
 const TARGETS: { key: RespondentRole; label: string; short: string }[] = [
   { key: "paciente", label: "Paciente", short: "P" },
@@ -33,6 +35,7 @@ export function QuestionsEditor({
   const [cat, setCat] = useState("");
   const [target, setTarget] = useState<RespondentRole | "">("");
   const [term, setTerm] = useState("");
+  const [view, setView] = useState<"lista" | "matriz">("lista");
 
   const run = (fn: () => Promise<Result>) =>
     start(async () => {
@@ -97,27 +100,55 @@ export function QuestionsEditor({
             ))}
           </select>
         </div>
-        <p className="faint" style={{ marginTop: 12 }}>
-          {visible.length} de {questions.length} perguntas · legenda: P = paciente, R = mãe/pai, T = terapeuta
-        </p>
-
-        <div style={{ marginTop: 8 }}>
-          {visible.map((q, i) => (
-            <QuestionRow
-              key={q.id}
-              q={q}
-              categories={categories}
-              scales={scales}
-              catLabel={catName.get(q.categoryId) ?? ""}
-              scaleLabel={scaleName.get(q.scaleId) ?? ""}
-              first={i === 0 || visible[i - 1].categoryId !== q.categoryId}
-              last={i === visible.length - 1 || visible[i + 1].categoryId !== q.categoryId}
-              disabled={pending}
-              run={run}
-              testId={testId}
-            />
-          ))}
+        <div className="row" style={{ marginTop: 12, justifyContent: "space-between" }}>
+          <p className="faint" style={{ margin: 0 }}>
+            {visible.length} de {questions.length} perguntas{view === "lista" && " · legenda: P = paciente, R = mãe/pai, T = terapeuta"}
+          </p>
+          <div className="row" style={{ gap: 4 }} role="group" aria-label="Visualização">
+            <button type="button" className={`btn sm${view === "lista" ? "" : " ghost"}`} onClick={() => setView("lista")} aria-pressed={view === "lista"}>
+              Lista
+            </button>
+            <button type="button" className={`btn sm${view === "matriz" ? "" : " ghost"}`} onClick={() => setView("matriz")} aria-pressed={view === "matriz"}>
+              Matriz de pesos
+            </button>
+          </div>
         </div>
+
+        {view === "matriz" ? (
+          <div style={{ marginTop: 12 }}>
+            <WeightsMatrix
+              categories={categories}
+              questions={visible}
+              pending={pending}
+              onSave={(rows, done) =>
+                start(async () => {
+                  const res = await saveQuestionWeights(testId, rows);
+                  toast.show(res.ok ? res.message ?? "Salvo." : res.error);
+                  if (res.ok) done();
+                  router.refresh();
+                })
+              }
+            />
+          </div>
+        ) : (
+          <div style={{ marginTop: 8 }}>
+            {visible.map((q, i) => (
+              <QuestionRow
+                key={q.id}
+                q={q}
+                categories={categories}
+                scales={scales}
+                catLabel={catName.get(q.categoryId) ?? ""}
+                scaleLabel={scaleName.get(q.scaleId) ?? ""}
+                first={i === 0 || visible[i - 1].categoryId !== q.categoryId}
+                last={i === visible.length - 1 || visible[i + 1].categoryId !== q.categoryId}
+                disabled={pending}
+                run={run}
+                testId={testId}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -131,7 +162,7 @@ function QuestionForm({
   onSubmit,
   onCancel,
 }: {
-  categories: Opt[];
+  categories: Cat[];
   scales: Opt[];
   initial: QuestionInput;
   submitLabel: string;
@@ -202,32 +233,10 @@ function QuestionForm({
       </div>
       <div>
         <label>Peso da resposta em cada habilidade</label>
-        <p className="faint" style={{ margin: "0 0 8px" }}>
-          Uma pergunta raramente mede uma habilidade só. A principal é onde ela aparece e é sorteada; nas outras, 0 = não conta.
+        <p className="faint" style={{ margin: "0 0 4px" }}>
+          Uma pergunta raramente mede uma habilidade só. Contorno = classificação principal (onde ela aparece e é sorteada); vazio = não conta.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "6px 16px" }}>
-          {categories.map((c) => {
-            const primary = c.id === f.categoryId;
-            return (
-              <label key={c.id} className="small row" style={{ fontWeight: primary ? 600 : 400, margin: 0, gap: 8, justifyContent: "space-between", flexWrap: "nowrap" }}>
-                <span>
-                  {c.name}
-                  {primary && <span className="faint"> · principal</span>}
-                </span>
-                <input
-                  type="number"
-                  min={primary ? 0.1 : 0}
-                  step={0.1}
-                  value={primary ? f.weight : sw[c.id] ?? 0}
-                  onChange={(e) =>
-                    setF(primary ? { ...f, weight: Number(e.target.value) } : { ...f, skillWeights: { ...sw, [c.id]: Number(e.target.value) } })
-                  }
-                  style={{ width: 80, flex: "none" }}
-                />
-              </label>
-            );
-          })}
-        </div>
+        <WeightRow categories={categories} q={f} onChange={(id, n) => setF(withWeight(f, id, n))} />
       </div>
       <div className="row">
         <button className="btn sm">{submitLabel}</button>
@@ -255,7 +264,7 @@ function QuestionRow({
 }: {
   q: Q;
   testId: string;
-  categories: Opt[];
+  categories: Cat[];
   scales: Opt[];
   catLabel: string;
   scaleLabel: string;
