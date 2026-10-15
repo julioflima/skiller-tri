@@ -48,7 +48,7 @@ export default async function Home() {
           <p className="lp-kicker">Plataforma de acompanhamento</p>
           <h1>Aprender e acompanhar, um teste de cada vez.</h1>
           <p className="lp-lead">
-            O Skiller TRI reúne escolas que acompanham seus pacientes por meio de testes. Cada escola tem a própria equipe de terapeutas; cada
+            O Skiller reúne escolas que acompanham seus pacientes por meio de testes. Cada escola tem a própria equipe de terapeutas; cada
             teste mede o que importa ouvindo quem convive com a pessoa, e mostra a evolução sessão a sessão.
           </p>
           <div className="row">

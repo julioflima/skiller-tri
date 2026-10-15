@@ -26,7 +26,7 @@ const MAX_STEPS = 15;
 /** Sonnet: bom o bastante para editar o teste com ferramentas e bem mais barato que o Opus. */
 const MODEL = "claude-sonnet-5-5";
 
-const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma Skiller TRI, usado por terapeutas.
+const SYSTEM = `Você é o assistente de edição de um teste psicológico da plataforma Skiller, usado por terapeutas.
 Você conversa em português (Brasil) com a pessoa administradora e altera o teste usando as ferramentas disponíveis.
 
 Como o teste funciona:

@@ -111,7 +111,6 @@ a { color: var(--indigo); }
 }
 /* logo da plataforma, igual ao da landing (Fredoka, azul-marinho, selo laranja) */
 .wordmark { font: 700 1.6rem/1 var(--font-fredoka), var(--font-body); letter-spacing: -0.02em; color: #1e2f4a; white-space: nowrap; }
-.wordmark b { margin-left: 4px; padding: 2px 8px 3px; border-radius: 999px; background: #e8692a; color: #fff4e4; font-weight: 700; font-size: 0.8em; vertical-align: 2px; }
 .wordmark.lg { font-size: 2.2rem; }
 .wordmark.light { color: #fff4e4; }
 .brand-slogan { font-size: 1.15rem; font-weight: 400; margin-left: 4px; }

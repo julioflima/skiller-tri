@@ -25,7 +25,7 @@ async function findTest(slug: string, preview: boolean) {
 export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const test = await findTest((await params).slug, !!(await searchParams).previa);
   if (!test?.landing) return {};
-  return { title: `${test.name} · Skiller TRI`, description: test.landing.lead || test.description };
+  return { title: `${test.name} · Skiller`, description: test.landing.lead || test.description };
 }
 
 const ROLE_CARD: Record<RespondentRole, { title: string; color: string; text: (aboutOther: boolean) => string }> = {

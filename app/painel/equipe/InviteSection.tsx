@@ -25,7 +25,7 @@ function inviteMessage(i: PendingInvite) {
   const ola = i.name ? `Olá, ${i.name.split(" ")[0]}!` : "Olá!";
   const papel = i.role === "admin" ? "dono(a) da plataforma" : `${ROLE_LABEL[i.role]}${i.school ? ` da escola ${i.school}` : ""}`;
   const prazo = new Date(i.expiresAt).toLocaleDateString("pt-BR");
-  return `${ola} Você foi convidado(a) para entrar no Skiller TRI como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
+  return `${ola} Você foi convidado(a) para entrar no Skiller como ${papel}. Crie sua conta pelo link abaixo (vale até ${prazo}):`;
 }
 
 /** Com `school`, convida terapeutas ou administradores dessa escola; sem, donos da plataforma. */

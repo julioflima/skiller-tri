@@ -8,7 +8,7 @@ const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Skiller TRI · Acompanhamento por meio de testes",
+  title: "Skiller · Acompanhamento por meio de testes",
   description: "Plataforma de escolas que acompanham seus pacientes por meio de testes.",
 };
 

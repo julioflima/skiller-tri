@@ -129,7 +129,7 @@ export type User = {
   email: string;
   passwordHash: string;
   /**
-   * admin = dono do Skiller TRI (plataforma). Na escola: gestor = administrador da escola (pacientes, equipe, links);
+   * admin = dono do Skiller (plataforma). Na escola: gestor = administrador da escola (pacientes, equipe, links);
    * terapeuta = responde os testes e analisa os próprios pacientes.
    */
   role: "admin" | "gestor" | "terapeuta";

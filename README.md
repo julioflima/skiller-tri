@@ -1,4 +1,4 @@
-# Skiller TRI · Acompanhamento por meio de testes
+# Skiller · Acompanhamento por meio de testes
 
 Plataforma de escolas que acompanham seus pacientes por meio de testes. A plataforma cria e revisa os testes; cada **escola**
 é uma equipe de terapeutas que escolhe quais deles aplica; paciente e família respondem pelo celular e o terapeuta acompanha
@@ -23,7 +23,7 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 
 ## Escolas e papéis
 
-- **Dono** (`admin`): do Skiller TRI. Não pertence a escola; cria testes, escolas e convida outros donos. Vê os pacientes dentro de
+- **Dono** (`admin`): do Skiller. Não pertence a escola; cria testes, escolas e convida outros donos. Vê os pacientes dentro de
   cada escola (não há lista global).
 - **Administrador da escola** (`gestor`): cadastra e edita pacientes, escolhe o terapeuta, gera os links e cuida da equipe da própria
   escola (*Equipe*). Não é terapeuta de paciente.
@@ -37,7 +37,7 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 A plataforma e os testes têm identidades separadas:
 
 - **Plataforma** (`/`, painel, login, convite, página do respondente, favicon): papel com manchas de aquarela, títulos em
-  Fraunces, índigo e terracota, e o nome **Skiller TRI** escrito em texto (`app/components/BrandMark.tsx`) enquanto não há logo.
+  Fraunces, índigo e terracota, e o nome **Skiller** escrito em texto (`app/components/BrandMark.tsx`) enquanto não há logo.
 - **Teste** (`/teste/<endereço>`): logo, imagem de destaque e textos vêm da landing do teste. A paleta `--k-*` de
   `app/landing.css` é a do KAY12; a landing da plataforma (`.lp-platform`) a substitui pelas cores do painel.
 

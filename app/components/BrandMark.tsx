@@ -2,7 +2,7 @@
 export function BrandMark({ large = false, light = false }: { large?: boolean; light?: boolean }) {
   return (
     <span className={`wordmark${large ? " lg" : ""}${light ? " light" : ""}`}>
-      Skiller<b>TRI</b>
+      Skiller
     </span>
   );
 }
