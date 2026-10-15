@@ -233,10 +233,10 @@ function QuestionForm({
       </div>
       <div>
         <label>Peso da resposta em cada habilidade</label>
-        <p className="faint" style={{ margin: "0 0 4px" }}>
+        <WeightRow categories={categories} q={f} onChange={(id, n) => setF(withWeight(f, id, n))} />
+        <p className="faint" style={{ margin: "4px 0 0" }}>
           Uma pergunta raramente mede uma habilidade só. Contorno = classificação principal (onde ela aparece e é sorteada); vazio = não conta.
         </p>
-        <WeightRow categories={categories} q={f} onChange={(id, n) => setF(withWeight(f, id, n))} />
       </div>
       <div className="row">
         <button className="btn sm">{submitLabel}</button>
