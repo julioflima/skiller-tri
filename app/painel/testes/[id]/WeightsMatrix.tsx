@@ -90,26 +90,26 @@ function moveFocus(e: KeyboardEvent<HTMLInputElement>) {
   } else if (e.key === "Enter") e.preventDefault();
 }
 
-/** Uma linha da matriz, usada no formulário de uma pergunta. */
+/** A matriz de uma pergunta só, enfileirada (uma habilidade por linha), usada no formulário da pergunta. */
 export function WeightRow({ categories, q, onChange }: { categories: Cat[]; q: Weights; onChange: (catId: string, n: number) => void }) {
   const max = Math.max(1, ...categories.map((c) => weightIn(q, c.id)));
   return (
-    <div className="table-wrap">
-      <table className="wm">
-        <thead>
-          <tr>
-            <WeightHead categories={categories} primary={q.categoryId} />
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {categories.map((c) => (
-              <WeightCell key={c.id} value={weightIn(q, c.id)} primary={c.id === q.categoryId} max={max} label={c.name} onChange={(n) => onChange(c.id, n)} />
-            ))}
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table className="wm wm-list">
+      <tbody>
+        {categories.map((c) => {
+          const primary = c.id === q.categoryId;
+          return (
+            <tr key={c.id} className={primary ? "primary" : ""}>
+              <th scope="row">
+                {c.name}
+                {primary && <span className="faint"> · principal</span>}
+              </th>
+              <WeightCell value={weightIn(q, c.id)} primary={primary} max={max} label={c.name} onChange={(n) => onChange(c.id, n)} />
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
