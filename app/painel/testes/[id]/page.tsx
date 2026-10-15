@@ -4,7 +4,6 @@ import { requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { poolFor } from "@/lib/forms";
 import { optionSymbolSrc } from "@/app/components/SymbolImg";
-import { DEFAULT_SYMBOL_PROMPT, symbolPromptFor } from "@/lib/symbols";
 import { ArchiveTestSection, CategoriesEditor, LandingEditor, ScalesEditor, StagesEditor, TestMetaEditor } from "./Editors";
 import { QuestionsEditor } from "./QuestionsEditor";
 import { Coverage } from "./Coverage";
@@ -100,7 +99,6 @@ export default async function TestPage({ params, searchParams }: { params: Promi
       ) : aba === "respostas" ? (
         <ScalesEditor
           testId={test.id}
-          hasKey={hasKey}
           scales={test.scales}
           symbols={Object.fromEntries(test.scales.flatMap((s) => s.options.map((o) => [o.id, optionSymbolSrc(s, o.id)])))}
           usage={Object.fromEntries(test.scales.map((s) => [s.id, test.questions.filter((q) => q.scaleId === s.id).length]))} />
@@ -119,10 +117,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         />
       ) : aba === "dados" ? (
         <>
-          <TestMetaEditor
-            test={{ id: test.id, name: test.name, description: test.description, active: test.active, symbolPrompt: symbolPromptFor(test) }}
-            defaultSymbolPrompt={DEFAULT_SYMBOL_PROMPT}
-          />
+          <TestMetaEditor test={{ id: test.id, name: test.name, description: test.description, active: test.active }} />
           <ArchiveTestSection
             testId={test.id}
             name={test.name}

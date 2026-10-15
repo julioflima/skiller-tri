@@ -6,6 +6,7 @@ export type About = "si" | "outro" | "paciente";
 
 export type GuardianKind = "mae" | "pai";
 
+/** "ia" ficou só nos símbolos gerados antes de a geração por IA sair do app. */
 export type SymbolSource = "ia" | "auto" | "manual";
 
 export type ScaleOption = {
@@ -14,7 +15,9 @@ export type ScaleOption = {
   description: string;
   /** Peso (valor numérico) atribuído a esta resposta. */
   weight: number;
-  /** Símbolo da resposta: é nele que a pessoa toca para responder. */
+  /** Símbolo da resposta (é nele que a pessoa toca para responder): imagem enviada, servida por /arquivos/. */
+  symbolImage?: string;
+  /** Símbolo SVG antigo, de antes do envio de imagens; vale quando não há symbolImage. */
   symbolSvg?: string;
   symbolSource?: SymbolSource;
 };
@@ -83,8 +86,6 @@ export type Test = {
   categories: Category[];
   questions: Question[];
   stages: Stage[];
-  /** Instruções para a IA desenhar os símbolos deste teste. Vazio = DEFAULT_SYMBOL_PROMPT. */
-  symbolPrompt?: string;
   /** Página pública do teste (/teste/<slug>). */
   landing?: TestLanding;
   /**

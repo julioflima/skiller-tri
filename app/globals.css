@@ -219,11 +219,26 @@ input:focus, select:focus, textarea:focus {
   display: block;
   filter: url(#wc-symbol);
 }
+/* imagem enviada pela equipe: aparece como foi desenhada, sem o efeito de aquarela */
+.symbol[src^="/arquivos/"] {
+  filter: none;
+  object-fit: contain;
+}
 .symbol-frame {
   display: grid;
   place-items: center;
   background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
+}
+
+/* símbolo de uma resposta no editor da escala: clicar envia a imagem */
+.symbol-field { position: relative; display: inline-block; width: 44px; }
+.symbol-field label:hover .symbol { outline: 2px dashed var(--lilac); outline-offset: 2px; border-radius: 6px; }
+.symbol-reset {
+  position: absolute; top: -6px; right: -8px;
+  width: 18px; height: 18px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card); color: inherit;
+  font-size: 12px; line-height: 1; cursor: pointer;
 }
 
 /* ---------- questionário ---------- */

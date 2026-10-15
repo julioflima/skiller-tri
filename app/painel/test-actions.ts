@@ -2,10 +2,9 @@
 
 import { requireUser } from "@/lib/auth";
 import { buildDefaultTest, newId, readDb, updateDb } from "@/lib/db";
-import { FILES_ROUTE, deleteLandingImage, landingFolder, saveLandingImage } from "@/lib/landing-files";
+import { FILES_ROUTE, deleteImage, landingFolder, saveLandingImage, saveSymbolImage } from "@/lib/landing-files";
 import { verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
-import { DEFAULT_SYMBOL_PROMPT, aiConfig, aiErrorMessage, cleanSvg, generateScaleSymbolsWithAI, symbolPromptFor } from "@/lib/symbols";
 import type { About, Db, RespondentRole, Scale, Stage, Test, TestLanding } from "@/lib/types";
 
 const ROLES: RespondentRole[] = ["paciente", "responsavel", "terapeuta"];
@@ -37,8 +36,6 @@ function move<T extends { id: string; order: number }>(list: T[], id: string, di
 }
 
 const admin = () => requireUser({ admin: true });
-/** Símbolos são SVGs simples: o Sonnet em esforço baixo resolve bem pela metade do preço do Opus. */
-const SYMBOL_MODEL = "claude-sonnet-5-5";
 
 // ---------- testes ----------
 
@@ -101,7 +98,7 @@ export async function createTest(name: string, mode: "vazio" | "padrao" | string
   });
 }
 
-export async function updateTestMeta(id: string, name: string, description: string, active: boolean, symbolPrompt: string) {
+export async function updateTestMeta(id: string, name: string, description: string, active: boolean) {
   return guard(async () => {
     await admin();
     if (!name.trim()) fail("O nome não pode ficar vazio.");
@@ -110,10 +107,6 @@ export async function updateTestMeta(id: string, name: string, description: stri
       t.name = name.trim();
       t.description = description.trim();
       t.active = active;
-      // igual ao padrão = não fixa, para acompanhar melhorias futuras do texto padrão
-      const prompt = symbolPrompt.trim();
-      if (prompt && prompt !== DEFAULT_SYMBOL_PROMPT) t.symbolPrompt = prompt;
-      else delete t.symbolPrompt;
     });
     return "Teste salvo.";
   });
@@ -166,7 +159,7 @@ export async function saveLanding(id: string, input: TestLanding) {
       return before.filter((u) => u && !now.includes(u));
     });
     // imagens trocadas ou removidas saem da pasta do teste no Blob
-    await Promise.all(replaced.map(deleteLandingImage));
+    await Promise.all(replaced.map(deleteImage));
     return input.published ? "Landing publicada." : "Landing salva (não publicada).";
   });
 }
@@ -293,7 +286,9 @@ export async function saveScale(testId: string, scale: Scale) {
             label: o.label.trim(),
             description: o.description.trim(),
             weight: Number(o.weight),
-            ...(old?.symbolSvg ? { symbolSvg: old.symbolSvg, symbolSource: old.symbolSource } : {}),
+            ...(old?.symbolImage ? { symbolImage: old.symbolImage } : {}),
+            ...(old?.symbolSvg ? { symbolSvg: old.symbolSvg } : {}),
+            ...(old?.symbolSource ? { symbolSource: old.symbolSource } : {}),
           };
         }),
       };
@@ -460,43 +455,22 @@ function getOption(db: Db, testId: string, scaleId: string, optionId: string) {
   return o;
 }
 
-/** Gera com IA os símbolos de todas as respostas da escala. Só grava o símbolo; texto, peso e id não mudam. */
-export async function generateScaleSymbols(testId: string, scaleId: string) {
+/** Envia a imagem do símbolo de uma resposta. Só grava o símbolo; texto, peso e id não mudam. */
+export async function uploadSymbolImage(testId: string, scaleId: string, optionId: string, form: FormData) {
   return guard(async () => {
     await admin();
-    const db = await readDb();
-    const t = getTest(db, testId);
-    const scale = t.scales.find((x) => x.id === scaleId);
-    if (!scale) fail("Escala não encontrada.");
-    const { apiKey, workspaceId } = aiConfig();
-    if (!apiKey) fail("Defina ANTHROPIC_API_KEY no servidor.");
-    let svgs: string[];
-    try {
-      svgs = await generateScaleSymbolsWithAI({ apiKey, workspaceId, model: SYMBOL_MODEL, instructions: symbolPromptFor(t), scaleName: scale.name, options: scale.options });
-    } catch (e) {
-      fail(aiErrorMessage(e));
-    }
-    const ids = scale.options.map((o) => o.id);
-    await updateDb((db) => {
-      ids.forEach((id, i) => {
-        const o = getOption(db, testId, scaleId, id);
-        o.symbolSvg = svgs[i];
-        o.symbolSource = "ia";
-      });
-    });
-    return "Símbolos gerados.";
-  });
-}
-
-export async function setManualSymbol(testId: string, scaleId: string, optionId: string, rawSvg: string) {
-  return guard(async () => {
-    await admin();
-    const svg = cleanSvg(rawSvg);
+    getOption(await readDb(), testId, scaleId, optionId);
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.size) fail("Escolha uma imagem.");
+    const url = await saveSymbolImage(testId, optionId, file);
+    let previous: string | undefined;
     await updateDb((db) => {
       const o = getOption(db, testId, scaleId, optionId);
-      o.symbolSvg = svg;
+      previous = o.symbolImage;
+      o.symbolImage = url;
       o.symbolSource = "manual";
     });
+    await deleteImage(previous);
     return "Símbolo salvo.";
   });
 }
@@ -504,11 +478,15 @@ export async function setManualSymbol(testId: string, scaleId: string, optionId:
 export async function resetSymbol(testId: string, scaleId: string, optionId: string) {
   return guard(async () => {
     await admin();
+    let previous: string | undefined;
     await updateDb((db) => {
       const o = getOption(db, testId, scaleId, optionId);
+      previous = o.symbolImage;
+      delete o.symbolImage;
       delete o.symbolSvg;
       delete o.symbolSource;
     });
+    await deleteImage(previous);
     return "Símbolo automático restaurado.";
   });
 }

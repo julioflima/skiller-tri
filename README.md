@@ -116,9 +116,8 @@ O editor de testes avisa quando alguma classificação tem menos de **3 pergunta
 
 ## Como os vieses são reduzidos
 
-- Cada pergunta aparece com um **símbolo abstrato** próprio. A classificação e os pesos nunca vão ao navegador de quem responde.
+- Cada resposta aparece com um **símbolo** próprio. A classificação e os pesos nunca vão ao navegador de quem responde.
 - O sorteio mistura as classificações e varia as perguntas entre as sessões.
-- As instruções para a IA proíbem símbolos figurativos, com carga emocional ou que ilustrem a afirmação.
 
 ## Rodando
 
@@ -132,16 +131,16 @@ Na primeira execução é criada a conta de administrador de `ADMIN_EMAIL`/`ADMI
 `admin`. **Troque antes de publicar.** Para o botão "Falar com a equipe" da página inicial, defina `CONTACT_URL`
 (`mailto:`, link do WhatsApp ou formulário).
 
-### Símbolos com IA
+### Símbolos das respostas
 
-Defina a chave da Anthropic em `ANTHROPIC_API_KEY`. Depois, em *Testes → Perguntas*, use
-**Gerar símbolos faltantes** ou o botão ✦ de cada pergunta. O SVG devolvido é validado (sem scripts, links ou texto)
-e exibido sempre como `<img>`.
+Em *Testes → Respostas*, clique no símbolo de cada resposta para enviar uma imagem (PNG, JPG, WEBP ou SVG, até 3 MB).
+A imagem vai para o Vercel Blob (`testes/<id>/simbolos/`) e é exibida sempre como `<img>`. Sem imagem, a resposta usa
+um símbolo automático; o × ao lado do símbolo volta a ele.
 
 ## Deploy na Vercel
 
 O app roda inteiro na Vercel: páginas e APIs (Server Actions e route handlers) no próprio Next.js,
-dados no **Prisma Postgres** e SVGs dos símbolos no **Vercel Blob**, os dois ligados em *Storage*.
+dados no **Prisma Postgres** e imagens dos símbolos e das landings no **Vercel Blob**, os dois ligados em *Storage*.
 
 | Variável                | Origem |
 |-------------------------|--------|
@@ -165,4 +164,4 @@ npm run db:import                           # opcional: copia data/db.json para 
 O schema (`prisma/schema.prisma`) guarda cada entidade do `Db` como uma linha JSON da tabela `Record`,
 indexada por coleção e id. O `lib/db-prisma.ts` faz a leitura e a gravação incremental, e um *advisory lock*
 do Postgres serializa as alterações entre as instâncias da Vercel. O helper do Blob fica em
-`lib/symbol-storage.ts`.
+`lib/landing-files.ts`.

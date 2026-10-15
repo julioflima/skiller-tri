@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { requireUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { fail, guard, type Result } from "@/lib/result";
-import { aiConfig, aiErrorMessage } from "@/lib/symbols";
+import { aiConfig, aiErrorMessage } from "@/lib/ai";
 import type { Scale, Stage, Test } from "@/lib/types";
 import {
   deleteCategory,
@@ -183,7 +183,7 @@ async function runTool(testId: string, name: string, input: Input): Promise<{ re
       return { result: { ok: true }, text: snapshot(t) };
     case "atualizar_dados":
       return {
-        result: await updateTestMeta(testId, input.name ?? t.name, input.description ?? t.description, input.active ?? t.active, t.symbolPrompt ?? ""),
+        result: await updateTestMeta(testId, input.name ?? t.name, input.description ?? t.description, input.active ?? t.active),
         label: "Dados do teste atualizados",
       };
     case "salvar_classificacao": {
