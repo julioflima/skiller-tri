@@ -46,7 +46,7 @@ export function CategoriesEditor({ testId, categories }: { testId: string; categ
     <div className="stack">
       {toast.node}
       <section className="card">
-        <p className="muted small">A classificação agrupa as perguntas no resultado (ex.: cada uma das 12 habilidades). Ela nunca aparece para quem responde.</p>
+        <p className="muted small">A classificação agrupa as perguntas do teste para somar as respostas no resultado (ex.: uma habilidade, um domínio, um fator). Ela nunca aparece para quem responde.</p>
         {categories.map((c, i) => (
           <CategoryRow key={c.id} testId={testId} c={c} first={i === 0} last={i === categories.length - 1} run={run} pending={pending} />
         ))}

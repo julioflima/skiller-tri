@@ -25,7 +25,7 @@ export type Scale = {
   options: ScaleOption[];
 };
 
-/** Classificação da pergunta (ex.: uma das 12 habilidades). */
+/** Classificação da pergunta: agrupa perguntas para somar as respostas no resultado. */
 export type Category = {
   id: string;
   name: string;
