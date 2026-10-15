@@ -145,6 +145,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
               targets: q.targets,
               perspectives: q.perspectives,
               weight: q.weight,
+              skillWeights: q.skillWeights ?? {},
               active: q.active,
               used: used.has(q.id),
             }))}

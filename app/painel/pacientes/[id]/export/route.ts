@@ -1,7 +1,7 @@
 import { canSeePatient, currentUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
 import { ABOUT_LABEL, respondentName } from "@/lib/forms";
-import { normalized } from "@/lib/scoring";
+import { normalized, questionWeights } from "@/lib/scoring";
 
 const cell = (v: unknown) => {
   const s = v === null || v === undefined ? "" : String(v);
@@ -21,7 +21,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const therapist = db.users.find((u) => u.id === p.therapistId);
 
   const rows: unknown[][] = [
-    ["paciente", "etapa", "sessao", "data_sessao", "quem_respondeu", "papel", "sobre", "classificacao", "pergunta", "peso_pergunta", "resposta", "peso_resposta", "percentual", "respondido_em", "tempo_segundos", "trocas_de_resposta"],
+    ["paciente", "etapa", "sessao", "data_sessao", "quem_respondeu", "papel", "sobre", "classificacao", "pergunta", "peso_pergunta", "outras_habilidades", "resposta", "peso_resposta", "percentual", "respondido_em", "tempo_segundos", "trocas_de_resposta"],
   ];
   const forms = db.forms.filter((f) => f.patientId === p.id).sort((a, b) => a.sessionNumber - b.sessionNumber);
   for (const f of forms) {
@@ -43,6 +43,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         test?.categories.find((c) => c.id === q?.categoryId)?.name ?? "",
         q?.text ?? "",
         q?.weight ?? "",
+        q ? questionWeights(q).slice(1).map(([c, w]) => `${test?.categories.find((x) => x.id === c)?.name ?? c}: ${String(w).replace(".", ",")}`).join(" | ") : "",
         options.get(a.optionId) ?? "",
         String(a.weight).replace(".", ","),
         Math.round(normalized(a) * 100),

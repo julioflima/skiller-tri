@@ -42,8 +42,13 @@ export type Question = {
   targets: RespondentRole[];
   /** Para o paciente: se pode ser usada sobre si, sobre o outro, ou ambos. */
   perspectives: ("si" | "outro")[];
-  /** Peso da pergunta no cálculo da classificação. */
+  /** Peso da pergunta no cálculo da classificação principal (categoryId). */
   weight: number;
+  /**
+   * Peso da resposta nas outras classificações (habilidades), além da principal: uma pergunta raramente
+   * mede uma habilidade só. Ausente ou sem a classificação = não conta nela.
+   */
+  skillWeights?: Record<string, number>;
   active: boolean;
   order: number;
 };

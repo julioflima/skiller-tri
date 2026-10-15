@@ -1,9 +1,15 @@
 import { GUARDIAN_LABEL, seriesKey } from "./forms";
-import type { Answer, Form, Patient, Test } from "./types";
+import type { Answer, Form, Patient, Question, Test } from "./types";
 
 /** Resposta normalizada de 0 a 1 segundo a escala usada no momento da resposta. */
 export function normalized(a: Answer) {
   return a.max === a.min ? 0 : (a.weight - a.min) / (a.max - a.min);
+}
+
+/** Peso da pergunta em cada classificação: a principal mais as outras habilidades com peso > 0. */
+export function questionWeights(q: Pick<Question, "categoryId" | "weight" | "skillWeights">): [string, number][] {
+  const extra = Object.entries(q.skillWeights ?? {}).filter(([id, w]) => id !== q.categoryId && w > 0);
+  return [[q.categoryId, q.weight], ...extra];
 }
 
 export type Series = { key: string; label: string };
@@ -33,11 +39,13 @@ export function scoreForms(test: Test, forms: Form[]): CategoryScores {
       const key = seriesKey(form, item);
       const cats = acc.get(key) ?? new Map();
       acc.set(key, cats);
-      const c = cats.get(q.categoryId) ?? { sum: 0, w: 0, n: 0 };
-      c.sum += normalized(ans) * q.weight;
-      c.w += q.weight;
-      c.n += 1;
-      cats.set(q.categoryId, c);
+      for (const [cat, w] of questionWeights(q)) {
+        const c = cats.get(cat) ?? { sum: 0, w: 0, n: 0 };
+        c.sum += normalized(ans) * w;
+        c.w += w;
+        c.n += 1;
+        cats.set(cat, c);
+      }
     });
   }
   const out: CategoryScores = new Map();
@@ -60,8 +68,9 @@ export function overallBySeries(test: Test, forms: Form[]) {
       if (!ans || !q) return;
       const key = seriesKey(form, item);
       const c = acc.get(key) ?? { sum: 0, w: 0 };
-      c.sum += normalized(ans) * q.weight;
-      c.w += q.weight;
+      const w = questionWeights(q).reduce((s, [, x]) => s + x, 0);
+      c.sum += normalized(ans) * w;
+      c.w += w;
       acc.set(key, c);
     });
   }

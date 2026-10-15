@@ -60,7 +60,7 @@ export function QuestionsEditor({
             <QuestionForm
               categories={categories}
               scales={scales}
-              initial={{ text: "", categoryId: cat || categories[0].id, scaleId: scales[0].id, targets: ["paciente", "responsavel", "terapeuta"], perspectives: ["si", "outro"], weight: 1 }}
+              initial={{ text: "", categoryId: cat || categories[0].id, scaleId: scales[0].id, targets: ["paciente", "responsavel", "terapeuta"], perspectives: ["si", "outro"], weight: 1, skillWeights: {} }}
               submitLabel="Adicionar pergunta"
               onSubmit={(data, reset) =>
                 start(async () => {
@@ -139,6 +139,12 @@ function QuestionForm({
   onCancel?: () => void;
 }) {
   const [f, setF] = useState(initial);
+  const sw = f.skillWeights ?? {};
+  // Trocar a classificação principal troca os pesos de lugar: a nova principal leva o peso que já tinha.
+  const setPrimary = (id: string) => {
+    const { [id]: had = 0, ...rest } = sw;
+    setF({ ...f, categoryId: id, weight: had > 0 ? had : f.weight, skillWeights: had > 0 ? { ...rest, [f.categoryId]: f.weight } : rest });
+  };
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   return (
     <form
@@ -151,8 +157,8 @@ function QuestionForm({
       <textarea value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} placeholder="Texto da pergunta" required style={{ minHeight: 60 }} />
       <div className="grid-2" style={{ gap: 12 }}>
         <div>
-          <label>Classificação</label>
-          <select value={f.categoryId} onChange={(e) => setF({ ...f, categoryId: e.target.value })}>
+          <label>Classificação principal</label>
+          <select value={f.categoryId} onChange={(e) => setPrimary(e.target.value)}>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -180,10 +186,6 @@ function QuestionForm({
             ))}
           </div>
         </div>
-        <div>
-          <label>Peso da pergunta</label>
-          <input type="number" min={0.1} step={0.1} value={f.weight} onChange={(e) => setF({ ...f, weight: Number(e.target.value) })} style={{ maxWidth: 120 }} />
-        </div>
         {f.targets.includes("paciente") && (
           <div>
             <label>O paciente pode responder</label>
@@ -197,6 +199,35 @@ function QuestionForm({
             </div>
           </div>
         )}
+      </div>
+      <div>
+        <label>Peso da resposta em cada habilidade</label>
+        <p className="faint" style={{ margin: "0 0 8px" }}>
+          Uma pergunta raramente mede uma habilidade só. A principal é onde ela aparece e é sorteada; nas outras, 0 = não conta.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "6px 16px" }}>
+          {categories.map((c) => {
+            const primary = c.id === f.categoryId;
+            return (
+              <label key={c.id} className="small row" style={{ fontWeight: primary ? 600 : 400, margin: 0, gap: 8, justifyContent: "space-between", flexWrap: "nowrap" }}>
+                <span>
+                  {c.name}
+                  {primary && <span className="faint"> · principal</span>}
+                </span>
+                <input
+                  type="number"
+                  min={primary ? 0.1 : 0}
+                  step={0.1}
+                  value={primary ? f.weight : sw[c.id] ?? 0}
+                  onChange={(e) =>
+                    setF(primary ? { ...f, weight: Number(e.target.value) } : { ...f, skillWeights: { ...sw, [c.id]: Number(e.target.value) } })
+                  }
+                  style={{ width: 80, flex: "none" }}
+                />
+              </label>
+            );
+          })}
+        </div>
       </div>
       <div className="row">
         <button className="btn sm">{submitLabel}</button>
@@ -234,6 +265,10 @@ function QuestionRow({
   run: (fn: () => Promise<Result>) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const others = categories.flatMap((c) => {
+    const w = q.skillWeights?.[c.id] ?? 0;
+    return c.id !== q.categoryId && w > 0 ? [[c.name, w] as const] : [];
+  });
 
   return (
     <div className={`q-row${q.active ? "" : " inactive"}`}>
@@ -242,7 +277,7 @@ function QuestionRow({
           <QuestionForm
             categories={categories}
             scales={scales}
-            initial={{ text: q.text, categoryId: q.categoryId, scaleId: q.scaleId, targets: q.targets, perspectives: q.perspectives, weight: q.weight }}
+            initial={{ text: q.text, categoryId: q.categoryId, scaleId: q.scaleId, targets: q.targets, perspectives: q.perspectives, weight: q.weight, skillWeights: q.skillWeights }}
             submitLabel="Salvar"
             onCancel={() => setEditing(false)}
             onSubmit={(data) => {
@@ -263,6 +298,11 @@ function QuestionRow({
             ))}
             {q.targets.includes("paciente") && q.perspectives.length === 1 && <span className="pill">só {q.perspectives[0] === "si" ? "sobre si" : "sobre o outro"}</span>}
             {q.weight !== 1 && <span className="pill mid">peso {q.weight}</span>}
+            {others.length > 0 && (
+              <span className="pill" title={others.map(([name, w]) => `${name}: ${w}`).join("\n")}>
+                + {others.length} {others.length === 1 ? "habilidade" : "habilidades"}
+              </span>
+            )}
             <span className="faint">· {scaleLabel}</span>
             {!q.active && <span className="pill low">inativa</span>}
           </div>

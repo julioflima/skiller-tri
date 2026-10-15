@@ -78,7 +78,13 @@ export async function createTest(name: string, mode: "vazio" | "padrao" | string
           landing: undefined,
           scales: src.scales.map((s) => ({ ...s, id: nid(s.id), options: s.options.map((o) => ({ ...o, id: newId() })) })),
           categories: src.categories.map((c) => ({ ...c, id: nid(c.id) })),
-          questions: src.questions.map((q) => ({ ...q, id: newId(), categoryId: nid(q.categoryId), scaleId: nid(q.scaleId) })),
+          questions: src.questions.map((q) => ({
+            ...q,
+            id: newId(),
+            categoryId: nid(q.categoryId),
+            scaleId: nid(q.scaleId),
+            skillWeights: q.skillWeights && Object.fromEntries(Object.entries(q.skillWeights).map(([c, w]) => [nid(c), w])),
+          })),
           stages: src.stages.map((s) => ({
             ...s,
             id: newId(),
@@ -254,6 +260,7 @@ export async function deleteCategory(testId: string, id: string) {
       const t = getTest(db, testId);
       if (t.questions.some((q) => q.categoryId === id)) fail("Mova ou exclua as perguntas desta classificação antes.");
       t.categories = t.categories.filter((c) => c.id !== id);
+      t.questions.forEach((q) => q.skillWeights && delete q.skillWeights[id]);
       t.stages.forEach((s) => s.rules.forEach((r) => (r.categoryIds = r.categoryIds.filter((c) => c !== id))));
       reorder(t.categories);
     });
@@ -319,6 +326,8 @@ export type QuestionInput = {
   targets: RespondentRole[];
   perspectives: ("si" | "outro")[];
   weight: number;
+  /** Peso nas outras classificações (habilidades); 0 ou ausente = não conta. */
+  skillWeights?: Record<string, number>;
 };
 
 function validQuestion(t: Test, q: QuestionInput) {
@@ -331,7 +340,13 @@ function validQuestion(t: Test, q: QuestionInput) {
   if (!Number.isFinite(weight) || weight <= 0) fail("O peso da pergunta deve ser maior que zero.");
   const perspectives = q.perspectives.filter((p) => p === "si" || p === "outro");
   if (targets.includes("paciente") && !perspectives.length) fail("Marque se o paciente responde sobre si, sobre o outro ou ambos.");
-  return { text: q.text.trim(), categoryId: q.categoryId, scaleId: q.scaleId, targets, perspectives, weight };
+  const skillWeights: Record<string, number> = {};
+  for (const [id, raw] of Object.entries(q.skillWeights ?? {})) {
+    const w = Number(raw);
+    if (!Number.isFinite(w) || w < 0) fail("Os pesos nas habilidades não podem ser negativos.");
+    if (w > 0 && id !== q.categoryId && t.categories.some((c) => c.id === id)) skillWeights[id] = w;
+  }
+  return { text: q.text.trim(), categoryId: q.categoryId, scaleId: q.scaleId, targets, perspectives, weight, skillWeights };
 }
 
 export async function saveQuestion(testId: string, id: string | null, input: QuestionInput) {

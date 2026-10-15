@@ -34,6 +34,8 @@ Como o teste funciona:
 - Escalas de resposta têm opções com peso numérico (ex.: Nunca=0 … Sempre=4).
 - Perguntas têm texto, classificação, escala, para quem podem ser feitas (targets: paciente, responsavel, terapeuta),
   perspectivas do paciente (si = sobre si, outro = sobre o outro; obrigatório se targets incluir paciente) e peso (> 0).
+  Uma pergunta raramente mede uma habilidade só: além da classificação principal (onde ela é listada e sorteada),
+  skillWeights dá o peso da resposta em cada outra classificação que ela também mede (0 = não conta).
 - Etapas ("inicial" uma vez no início, "sessao" a cada sessão) têm regras: papel, quantidade de perguntas sorteadas,
   sobre quem (paciente responde "si" ou "outro"; responsável e terapeuta respondem sobre "paciente"),
   classificações (vazio = todas) e uma instrução que aceita {paciente}.
@@ -74,7 +76,12 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
         scaleId: str,
         targets: { type: "array", items: ROLE_ENUM },
         perspectives: { type: "array", items: { type: "string", enum: ["si", "outro"] } },
-        weight: { type: "number" },
+        weight: { type: "number", description: "Peso na classificação principal (categoryId)." },
+        skillWeights: {
+          type: "object",
+          description: "Peso da resposta nas outras classificações (habilidades), por id da classificação; 0 = não conta. Quando enviado, substitui o conjunto inteiro.",
+          additionalProperties: { type: "number" },
+        },
       },
     },
   },
@@ -144,7 +151,7 @@ function snapshot(t: Test) {
     active: t.active,
     categories: [...t.categories].sort((a, b) => a.order - b.order).map(({ id, name, description }) => ({ id, name, description })),
     scales: t.scales.map((s) => ({ ...s, options: s.options.map(({ id, label, description, weight }) => ({ id, label, description, weight })) })),
-    questions: t.questions.map(({ id, text, categoryId, scaleId, targets, perspectives, weight, active }) => ({
+    questions: t.questions.map(({ id, text, categoryId, scaleId, targets, perspectives, weight, skillWeights, active }) => ({
       id,
       text,
       categoryId,
@@ -152,6 +159,7 @@ function snapshot(t: Test) {
       targets,
       perspectives,
       weight,
+      skillWeights,
       active,
     })),
     stages: t.stages,
@@ -197,6 +205,7 @@ async function runTool(testId: string, name: string, input: Input): Promise<{ re
         targets: input.targets ?? cur?.targets ?? ["paciente"],
         perspectives: input.perspectives ?? cur?.perspectives ?? ["si"],
         weight: input.weight ?? cur?.weight ?? 1,
+        skillWeights: input.skillWeights ?? cur?.skillWeights ?? {},
       };
       return { result: await saveQuestion(testId, input.id || null, data), label: `${cur ? "Pergunta editada" : "Pergunta criada"}: ${data.text}` };
     }
