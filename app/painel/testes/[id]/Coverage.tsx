@@ -19,8 +19,8 @@ export function Coverage({ test }: { test: Test }) {
         {gaps.length ? <span className="pill low">{gaps.length} lacuna(s)</span> : <span className="pill high">ok</span>}
       </summary>
       <p className="muted small">
-        Com menos de {MIN_QUESTIONS_PER_CATEGORY} perguntas, a habilidade não tem validade estatística: uma única resposta pesa demais e a TRI não consegue
-        calibrar a escala.
+        Com menos de {MIN_QUESTIONS_PER_CATEGORY} perguntas, a habilidade não tem validade estatística: uma única resposta pesa demais no
+        resultado.
       </p>
       <div className="table-wrap">
         <table className="table">

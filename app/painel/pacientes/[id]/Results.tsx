@@ -2,9 +2,7 @@ import Link from "next/link";
 import { LineChart, Legend } from "@/app/components/LineChart";
 import { Radar, SERIES_COLORS, shortName } from "@/app/components/Radar";
 import { Ecomap } from "@/app/components/Ecomap";
-import { IRT_STABLE_PERSONS, irtScores, thetaPercentile, type IrtCalibration } from "@/lib/irt";
 import { band, overallBySeries, scoreForms, SERIES_ORDER, seriesLabel } from "@/lib/scoring";
-import { dec } from "@/lib/stats";
 import type { Form, Patient, Test } from "@/lib/types";
 import { PrintButton } from "./PatientWidgets";
 
@@ -14,14 +12,12 @@ export function Results({
   forms,
   etapa,
   visao,
-  calibration,
 }: {
   patient: Patient;
   test: Test;
   forms: Form[];
   etapa: string;
   visao: string;
-  calibration: IrtCalibration;
 }) {
   const withAnswers = forms.filter((f) => Object.keys(f.answers).length);
   const selected = withAnswers.filter((f) => (etapa === "inicial" ? f.sessionNumber === 0 : etapa === "sessoes" ? f.sessionNumber > 0 : true));
@@ -53,11 +49,6 @@ export function Results({
     if (!vals.length) return { value: null, n: 0 };
     return { value: vals.reduce((a, v) => a + v.pct, 0) / vals.length, n: vals.reduce((a, v) => a + v.n, 0) };
   };
-
-  // TRI: θ por série e habilidade, com os parâmetros calibrados em todas as respostas do teste
-  const irt = irtScores(test, calibration, selected);
-  const irtCats = categories.filter((c) => calibration.has(c.id));
-  const minPersons = Math.min(...irtCats.map((c) => calibration.get(c.id)!.persons));
 
   return (
     <div className="stack">
@@ -155,66 +146,6 @@ export function Results({
             </div>
           </section>
         </>
-      )}
-
-      {keys.length > 0 && (
-        <section className="card alt">
-          <h2>Estimativa por TRI <span className="pill mid">experimental</span></h2>
-          {!irtCats.length ? (
-            <p className="muted small" style={{ margin: 0 }}>
-              Ainda não há respostas suficientes no teste para calibrar as perguntas (mínimo de 10 aplicações por habilidade, sem contar quem marcou só
-              o mínimo ou só o máximo). Veja <Link href="/painel/metodos#tri">Métodos</Link>.
-            </p>
-          ) : (
-            <>
-              <p className="muted small">
-                θ no modelo de escala gradual (Rasch), estimado por EAP: 0 = média do grupo de calibração, ±1 = um desvio-padrão. Entre parênteses, o
-                percentil aproximado. Diferente do percentual, a TRI considera quão difícil é cada pergunta.
-                {minPersons < IRT_STABLE_PERSONS && (
-                  <>
-                    {" "}
-                    <strong>Calibração com poucas aplicações (mín. {minPersons}); trate como indicativo até ~{IRT_STABLE_PERSONS}.</strong>
-                  </>
-                )}
-              </p>
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Habilidade</th>
-                      {keys.map((k) => (
-                        <th key={k} style={{ textAlign: "right" }}>
-                          <span style={{ color: color(k) }}>●</span> {seriesLabel(patient, k)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {irtCats.map((c) => (
-                      <tr key={c.id}>
-                        <td>{c.name}</td>
-                        {keys.map((k) => {
-                          const e = irt.get(k)?.get(c.id);
-                          return (
-                            <td key={k} style={{ textAlign: "right", whiteSpace: "nowrap" }} title={e ? `erro-padrão ${dec(e.se)} · ${e.n} resposta(s)` : undefined}>
-                              {e ? (
-                                <>
-                                  <strong>{e.theta >= 0 ? "+" : ""}{dec(e.theta)}</strong> <span className="faint">±{dec(e.se)} (P{thetaPercentile(e.theta)})</span>
-                                </>
-                              ) : (
-                                <span className="faint">—</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </section>
       )}
 
       {sessionNumbers.length > 0 && (

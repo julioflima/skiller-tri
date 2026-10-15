@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { canSeePatient, managesPatients, requirePageUser } from "@/lib/auth";
 import { schoolOptions } from "@/lib/schools";
 import { readDb } from "@/lib/db";
-import { calibrate } from "@/lib/irt";
 import { ABOUT_LABEL, formProgress, GUARDIAN_LABEL, respondentName } from "@/lib/forms";
 import type { Form } from "@/lib/types";
 import { ActionButton } from "@/app/components/ActionButton";
@@ -77,7 +76,6 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
           forms={forms}
           etapa={etapa}
           visao={visao}
-          calibration={calibrate(test, db.forms.filter((f) => f.testId === test.id))}
         />
       ) : aba === "dados" && manager ? (
         <>

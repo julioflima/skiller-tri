@@ -72,7 +72,7 @@ export default async function Home() {
             <div>
               <span className="lp-flow-n">1</span>
               <h3>A plataforma cria os testes</h3>
-              <p>Perguntas, classificações, escalas e etapas, calibrados com Teoria de Resposta ao Item à medida que as respostas chegam.</p>
+              <p>Perguntas, classificações, escalas e etapas, revisados à medida que as respostas chegam.</p>
             </div>
             <div>
               <span className="lp-flow-n">2</span>

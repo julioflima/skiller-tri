@@ -2,8 +2,6 @@ import { SERIES_COLORS, shortName } from "@/app/components/Radar";
 import { dec } from "@/lib/stats";
 import type { Category } from "@/lib/types";
 
-export const misfit = (v: number) => v > 1.3 || v < 0.7;
-
 export function strength(r: number) {
   const a = Math.abs(r);
   const s = a >= 0.7 ? "forte" : a >= 0.4 ? "moderada" : a >= 0.2 ? "fraca" : "desprezível";

@@ -1,6 +1,6 @@
 # Skiller TRI · Acompanhamento por meio de testes
 
-Plataforma de escolas que acompanham seus pacientes por meio de testes. A plataforma cria e calibra os testes; cada **escola**
+Plataforma de escolas que acompanham seus pacientes por meio de testes. A plataforma cria e revisa os testes; cada **escola**
 é uma equipe de terapeutas que escolhe quais deles aplica; paciente e família respondem pelo celular e o terapeuta acompanha
 os resultados e a evolução sessão a sessão. Cada **teste** é um produto com nome, landing page e identidade visual próprios
 (veja [Testes da plataforma](#testes-da-plataforma)).
@@ -14,10 +14,10 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/entrar` | equipe | Login com e-mail e senha. |
 | `/painel` | escola | Pacientes da escola (administrador) ou os próprios (terapeuta): sessões, resultados e CSV. O dono vai para Escolas. |
 | `/painel/analise` | escola | Análise da escola: correlação entre classificações e grupos de perfis (o terapeuta, só com os próprios pacientes). O dono vê a mesma análise na aba Análise de cada escola. |
-| `/painel/metodos` | todos | Explica os métodos (percentual, TRI e os outros modelos da família, correlação, grupos, tempos), onde aparecem e quantos dados pedem. Não mostra dados. |
+| `/painel/metodos` | todos | Explica os métodos (percentual, correlação, grupos, tempos), onde aparecem e quantos dados pedem. Não mostra dados. |
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
 | `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Análise, Equipe e Dados e testes. |
-| `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (calibração TRI e tempos, com as aplicações de todas as escolas) e landing page. |
+| `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (tempos de resposta, com as aplicações de todas as escolas) e landing page. |
 | `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
@@ -95,16 +95,6 @@ O resultado sai por classificação, separado em: paciente sobre si, paciente so
 Há radar, **ecomapa** (a pessoa no centro e as classificações como satélites: quanto mais perto, mais desenvolvida; visão 360
 ou por pessoa que respondeu), tabela, evolução por sessão e CSV com uma linha por resposta. As faixas (`lib/scoring.ts`) são
 descritivas e não substituem a análise do profissional.
-
-### TRI (`lib/irt.ts`)
-
-Ao lado do percentual, cada classificação ganha uma estimativa pelo **modelo de escala gradual de Andrich** (família Rasch),
-unidimensional por classificação. As dificuldades das perguntas e os limiares da escala são calibrados por máxima verossimilhança
-conjunta com todas as respostas do teste ("pessoa" = paciente × quem respondeu). O θ de cada visão sai por EAP (priori normal)
-com erro-padrão e percentil aproximado. A calibração exige ao menos 10 pessoas por classificação e é marcada como instável abaixo
-de ~70. Na aba *Qualidade* do teste aparecem, por pergunta, a dificuldade e o ajuste (infit/outfit; fora de 0,7–1,3 indica pergunta ambígua ou
-redundante), além da confiabilidade de cada classificação. Numa simulação com 80 pacientes, a calibração recuperou as dificuldades
-reais com r = 0,91 e os θ com r = 0,86.
 
 ### Análise da escola e qualidade do teste
 

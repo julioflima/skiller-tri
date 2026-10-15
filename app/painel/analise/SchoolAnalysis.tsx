@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { canSeePatient, type SessionUser } from "@/lib/auth";
-import { IRT_STABLE_PERSONS } from "@/lib/irt";
 import { scoreForms } from "@/lib/scoring";
 import { correlationMatrix, dec, impute, kmeans, mean, median, pca2, silhouette, type CorrMethod } from "@/lib/stats";
 import { fmtSeconds } from "@/lib/timing";
@@ -17,6 +16,8 @@ const SERIES = [
 
 /** Abaixo disso não há como separar grupos. */
 const MIN_CLUSTER = 6;
+/** A partir daqui grupos e correlações deixam de ser exploratórios (ver Métodos). */
+const STABLE_PROFILES = 50;
 
 export type AnalysisSearch = { teste?: string; serie?: string; metodo?: string; k?: string };
 
@@ -128,9 +129,9 @@ export function SchoolAnalysis({
         <Stat label="Tempo mediano" value={allTimes.length ? fmtSeconds(median(allTimes)) : "—"} hint="por pergunta" />
       </div>
 
-      {profiles.length < IRT_STABLE_PERSONS && (
+      {profiles.length < STABLE_PROFILES && (
         <p className="card tight muted small" style={{ margin: 0 }}>
-          Com {profiles.length} perfil(is), os números abaixo são exploratórios. A partir de ~{IRT_STABLE_PERSONS} pessoas os grupos e as correlações ficam
+          Com {profiles.length} perfil(is), os números abaixo são exploratórios. A partir de ~{STABLE_PROFILES} pessoas os grupos e as correlações ficam
           mais claros.
         </p>
       )}

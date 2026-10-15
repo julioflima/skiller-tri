@@ -179,10 +179,10 @@ export default async function TestLandingPage({ params, searchParams }: Params) 
             </p>
           </div>
           <div className="lp-card sand">
-            <h3>Medida com base estatística</h3>
+            <h3>Perguntas sob revisão</h3>
             <p className="muted">
-              Além do percentual, cada classificação é estimada pela Teoria de Resposta ao Item (modelo Rasch), com margem de erro e sinal de
-              perguntas ambíguas para a equipe revisar.
+              Cada classificação reúne várias perguntas, e a equipe acompanha o tempo de resposta de cada uma para revisar as que confundem ou não
+              estão sendo lidas.
             </p>
           </div>
           <div className="lp-card">
