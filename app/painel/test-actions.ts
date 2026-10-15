@@ -468,13 +468,13 @@ export async function uploadSymbolImage(testId: string, scaleId: string, optionI
       const o = getOption(db, testId, scaleId, optionId);
       previous = o.symbolImage;
       o.symbolImage = url;
-      o.symbolSource = "manual";
     });
     await deleteImage(previous);
     return "Símbolo salvo.";
   });
 }
 
+/** Tira a imagem enviada; a resposta volta ao SVG salvo, se houver, ou ao símbolo padrão. */
 export async function resetSymbol(testId: string, scaleId: string, optionId: string) {
   return guard(async () => {
     await admin();
@@ -483,10 +483,8 @@ export async function resetSymbol(testId: string, scaleId: string, optionId: str
       const o = getOption(db, testId, scaleId, optionId);
       previous = o.symbolImage;
       delete o.symbolImage;
-      delete o.symbolSvg;
-      delete o.symbolSource;
     });
     await deleteImage(previous);
-    return "Símbolo automático restaurado.";
+    return "Imagem removida; a resposta voltou ao símbolo padrão.";
   });
 }

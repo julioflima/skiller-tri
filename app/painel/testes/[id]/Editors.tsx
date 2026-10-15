@@ -159,7 +159,7 @@ export function ScalesEditor({
         Cada pergunta usa uma escala. O <strong>peso</strong> é o valor de cada resposta no cálculo. O resultado é normalizado entre o menor e o maior peso da escala,
         então escalas diferentes podem ser comparadas. Pesos podem ser invertidos (ex.: 4 → 0) para perguntas em sentido negativo.
         Cada resposta tem um <strong>símbolo</strong>, mostrado no cartão em que a pessoa toca para responder: clique nele para enviar uma imagem
-        (PNG, JPG, WEBP ou SVG, de preferência quadrada). Sem imagem, a resposta usa um símbolo automático.
+        (PNG, JPG, WEBP ou SVG, de preferência quadrada). Sem imagem, a resposta usa o símbolo padrão (um círculo que vai enchendo).
       </p>
       {scales.map((s) => (
         <ScaleCard key={s.id} testId={testId} scale={s} symbols={symbols} used={usage[s.id] ?? 0} />
@@ -290,10 +290,10 @@ function ScaleCard({
   );
 }
 
-/** Símbolo de uma resposta: clicar envia uma imagem; o × volta ao símbolo automático. */
+/** Símbolo de uma resposta: clicar envia uma imagem; o × tira a imagem e volta ao símbolo padrão. */
 function SymbolField({ testId, scaleId, option, src }: { testId: string; scaleId: string; option: Scale["options"][number]; src: string }) {
   const { run, pending, toast } = useRunner();
-  const custom = Boolean(option.symbolImage || option.symbolSvg);
+  const custom = Boolean(option.symbolImage);
   const send = (file: File | undefined) => {
     if (!file) return;
     const form = new FormData();
@@ -322,9 +322,9 @@ function SymbolField({ testId, scaleId, option, src }: { testId: string; scaleId
           type="button"
           className="symbol-reset"
           disabled={pending}
-          onClick={() => confirm("Voltar ao símbolo automático desta resposta?") && run(() => resetSymbol(testId, scaleId, option.id))}
-          aria-label="Voltar ao símbolo automático"
-          title="Voltar ao símbolo automático"
+          onClick={() => confirm("Tirar a imagem e voltar ao símbolo padrão desta resposta?") && run(() => resetSymbol(testId, scaleId, option.id))}
+          aria-label="Voltar ao símbolo padrão"
+          title="Voltar ao símbolo padrão"
         >
           ×
         </button>

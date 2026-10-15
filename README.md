@@ -135,7 +135,7 @@ Na primeira execução é criada a conta de administrador de `ADMIN_EMAIL`/`ADMI
 
 Em *Testes → Respostas*, clique no símbolo de cada resposta para enviar uma imagem (PNG, JPG, WEBP ou SVG, até 3 MB).
 A imagem vai para o Vercel Blob (`testes/<id>/simbolos/`) e é exibida sempre como `<img>`. Sem imagem, a resposta usa
-um símbolo automático; o × ao lado do símbolo volta a ele.
+o símbolo padrão (`DEFAULT_SYMBOLS` em `lib/symbols.ts`, um círculo que vai enchendo); o × ao lado do símbolo volta a ele.
 
 ## Deploy na Vercel
 
