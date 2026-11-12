@@ -57,3 +57,10 @@ model AssistantGap {
 
   @@index([status, createdAt(sort: Desc)])
 }
+
+/// Memória do assistente por pessoa (lib/assistant/skills/memoria.ts): o que ela costuma pedir e preferências, resumido a cada conversa.
+model AssistantMemory {
+  userId    String   @id
+  summary   String
+  updatedAt DateTime @updatedAt
+}

@@ -1,12 +1,12 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
-import { canManageTeam, canSeePatient, managesPatients, testsFor, type SessionUser } from "./auth";
-import { readDb } from "./db";
-import { formProgress, GUARDIAN_LABEL, respondentName } from "./forms";
-import { fail, type Result } from "./result";
-import { ROLE_LABEL } from "./roles";
-import { band, scoreForms, seriesLabel, SERIES_ORDER } from "./scoring";
-import type { Db, Patient, Scale, Stage, Test } from "./types";
+import { canManageTeam, canSeePatient, managesPatients, testsFor, type SessionUser } from "../auth";
+import { readDb } from "../db";
+import { formProgress, GUARDIAN_LABEL, respondentName } from "../forms";
+import { fail, type Result } from "../result";
+import { ROLE_LABEL } from "../roles";
+import { band, scoreForms, seriesLabel, SERIES_ORDER } from "../scoring";
+import type { Db, Patient, Scale, Stage, Test } from "../types";
 import { changeOwnName, updateUser } from "@/app/painel/user-actions";
 import { createInvite, renewInvite } from "@/app/painel/invite-actions";
 import { createSchool, updateSchool } from "@/app/painel/school-actions";
@@ -34,13 +34,12 @@ import {
   updateTestMeta,
 } from "@/app/painel/test-actions";
 
-// Ferramentas do assistente da plataforma. Cada uma reaproveita a ação da tela correspondente, com as mesmas
+// Ferramentas do assistente da plataforma (o agente em app/painel/assistant-actions.ts as liga ao modelo pelo LangChain). Cada uma reaproveita a ação da tela correspondente, com as mesmas
 // validações e permissões (quem não pode, recebe o mesmo erro da tela). Não existe ferramenta de exclusão:
 // as que poderiam apagar algo por omissão (escala, etapa, landing, escola) recusam quando algo sumiria.
 
 type Input = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
-export type ToolContext = { user: SessionUser; origin: string; logGap: (gap: GapInput) => Promise<void> };
-export type GapInput = { question: string; kind: string; topic: string; reason: string };
+export type ToolContext = { user: SessionUser; origin: string };
 type Tool = Anthropic.Tool & { label: string; write?: boolean };
 export type ToolOutcome = { ok: boolean; text: string; label: string; write: boolean };
 
@@ -49,15 +48,6 @@ const bool = { type: "boolean" } as const;
 const num = { type: "number" } as const;
 const ROLE_ENUM = { type: "string", enum: ["paciente", "responsavel", "terapeuta"] } as const;
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object" as const, properties, required });
-
-export const GAP_KINDS: Record<string, string> = {
-  sem_funcao: "A plataforma não faz isso",
-  sem_dados: "Faltam dados",
-  conhecimento: "Pergunta de conhecimento",
-  permissao: "Sem permissão",
-  exclusao: "Pediu para excluir",
-  outro: "Outro",
-};
 
 export const TOOLS: Tool[] = [
   // ---------- leitura ----------
@@ -236,22 +226,6 @@ export const TOOLS: Tool[] = [
     write: true,
     description: "Edita a landing page do teste; omita o que não muda. Imagens só pela tela (botão Enviar).",
     input_schema: obj({ testId: str, slug: str, published: bool, slogan: str, headline: str, lead: str, skillsTitle: str, skillsLead: str, contactUrl: str }, ["testId"]),
-  },
-  // ---------- lacunas ----------
-  {
-    name: "registrar_lacuna",
-    label: "Anotou no log o que não soube responder",
-    description:
-      "Anota no log do dono da plataforma algo que você não conseguiu responder ou fazer: função que a plataforma não tem, dado que não existe, pergunta de conhecimento que a plataforma não cobre (ex.: como trabalhar uma habilidade com o paciente), falta de permissão ou pedido de exclusão. Chame sempre que não conseguir atender, antes de responder.",
-    input_schema: obj(
-      {
-        question: { type: "string", description: "O que a pessoa pediu, nas palavras dela." },
-        kind: { type: "string", enum: Object.keys(GAP_KINDS) },
-        topic: { type: "string", description: "Tema curto (ex.: \"relatório em PDF\", \"empatia\", \"agenda de sessões\")." },
-        reason: { type: "string", description: "Por que não deu, em uma frase." },
-      },
-      ["question", "kind", "topic", "reason"],
-    ),
   },
 ];
 
@@ -562,9 +536,6 @@ async function run(ctx: ToolContext, name: string, input: Input): Promise<{ ok: 
       );
     }
 
-    case "registrar_lacuna":
-      await ctx.logGap({ question: String(input.question ?? ""), kind: GAP_KINDS[input.kind] ? input.kind : "outro", topic: String(input.topic ?? ""), reason: String(input.reason ?? "") });
-      return { ok: true, text: "Anotado no log do dono da plataforma." };
     default:
       return { ok: false, text: `Ferramenta desconhecida: ${name}` };
   }

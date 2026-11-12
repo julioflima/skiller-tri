@@ -18,18 +18,29 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
 | `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Análise, Equipe e Dados e testes. |
 | `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (tempos de resposta, com as aplicações de todas as escolas) e landing page. |
-| `/painel/lacunas` | dono | Log do que o assistente não conseguiu responder ou fazer (quem pediu, tema, por quê), para saber o que falta na plataforma. |
+| `/painel/lacunas` | só `LACUNAS_USER_IDS` | Log do que o assistente não conseguiu responder ou fazer (quem pediu, tema, por quê), para saber o que falta na plataforma. |
 | `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
 ## Assistente
 
-O botão **Assistente** (canto do painel, para todos os papéis) abre uma conversa com o Claude (Sonnet) que faz pela pessoa o que as
-telas fazem, com as mesmas permissões: consulta e cadastra pacientes, sessões, anotações e links; convida e edita a equipe; e, para o
-dono, escolas e testes. **Não exclui nada**: não há ferramenta de exclusão, e as que poderiam apagar algo por omissão (escala, etapa,
-responsáveis, testes de uma escola, imagens da landing) recusam. Senhas e imagens ficam só nas telas. O que ele não consegue atender vai
-para o log de **Lacunas** (`/painel/lacunas`). Conversas e lacunas ficam nas tabelas `AssistantConversation` e `AssistantGap`;
-ferramentas em `lib/assistant-tools.ts`, conversa em `app/painel/assistant-actions.ts`.
+O ícone do Claude (canto do painel, para todos os papéis) abre um app em tela cheia no espírito do claude.ai, como no miimo:
+conversas na barra lateral (busca, renomear com clique duplo), saudação e caixa no meio numa conversa nova. Ele faz pela pessoa o que as
+telas fazem, com as mesmas permissões, e explica qualquer parte da plataforma. **Não exclui nada**: não há ferramenta de exclusão, e as
+que poderiam apagar algo por omissão (escala, etapa, responsáveis, testes de uma escola, imagens da landing) recusam. Senhas e imagens
+ficam só nas telas.
+
+Roda no **LangChain** (`@langchain/anthropic`), em `lib/assistant/`:
+
+- `knowledge.ts`: base de conhecimento (ideia, papéis, telas e UX, testes, sorteio, resultados, métodos; a arquitetura só para o dono).
+  **Atualize junto com qualquer mudança de tela, regra ou cálculo.**
+- `context.ts`: contexto de cada pessoa (ChatPromptTemplate com o conhecimento filtrado, papel, escola, carteira atual e memória).
+- `tools.ts`: ferramentas ligadas às mesmas Server Actions das telas.
+- `skills/`: rodam depois da resposta entregue (`after`), com Haiku: `memoria.ts` resume o que a pessoa costuma pedir
+  (tabela `AssistantMemory`) e `registrar-falha.ts` avalia cada resposta e anota no log de **Lacunas** o que não foi atendido.
+
+O log de Lacunas (`/painel/lacunas`) só existe para os ids de `LACUNAS_USER_IDS`; para os demais a aba some, a página dá 404 e nem a
+assistente sabe dele. Conversas na tabela `AssistantConversation` (mensagens no formato do LangChain), falhas em `AssistantGap`.
 
 ## Escolas e papéis
 
@@ -158,6 +169,7 @@ dados no **Prisma Postgres** e imagens dos símbolos e das landings no **Vercel 
 | `BLOB_STORE_ID`         | Criada pelo Vercel Blob (autentica por OIDC, sem token fixo) |
 | `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Definir à mão em *Settings → Environment Variables* |
 | `ANTHROPIC_API_KEY`, `CONTACT_URL` | Opcionais |
+| `LACUNAS_USER_IDS` | Ids de quem vê o log de Lacunas do assistente |
 
 No deploy, o script `vercel-build` roda `prisma generate`, depois `prisma migrate deploy` e por fim `next build`.
 Assim a tabela é criada ou atualizada antes de o app subir.

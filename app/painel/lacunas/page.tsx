@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { requirePageUser } from "@/lib/auth";
-import { GAP_KINDS } from "@/lib/assistant-tools";
+import { seesGaps } from "@/lib/assistant/access";
+import { GAP_KINDS } from "@/lib/assistant/skills/registrar-falha";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABEL, type Role } from "@/lib/roles";
 import { GapStatus } from "./GapStatus";
@@ -14,7 +16,8 @@ const date = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Pau
 
 /** Log do que o assistente não conseguiu responder ou fazer: mostra o que falta na plataforma. */
 export default async function GapsPage({ searchParams }: { searchParams: Promise<{ status?: string; tipo?: string }> }) {
-  await requirePageUser({ admin: true });
+  // só para quem está em LACUNAS_USER_IDS: para os demais a página não existe
+  if (!seesGaps(await requirePageUser({ admin: true }))) notFound();
   const sp = await searchParams;
   const status: Status = sp.status && sp.status in STATUS ? (sp.status as Status) : "aberta";
   const kind = sp.tipo && sp.tipo in GAP_KINDS ? sp.tipo : undefined;
@@ -45,7 +48,7 @@ export default async function GapsPage({ searchParams }: { searchParams: Promise
           <Link href={href(status)} className={`pill${kind ? "" : " ia"}`}>
             Todos os tipos
           </Link>
-          {Object.entries(GAP_KINDS).map(([k, label]) => (
+          {(Object.entries(GAP_KINDS) as [string, string][]).map(([k, label]) => (
             <Link key={k} href={href(status, k)} className={`pill${k === kind ? " ia" : ""}`}>
               {label}
             </Link>
@@ -87,7 +90,7 @@ export default async function GapsPage({ searchParams }: { searchParams: Promise
                     <td>
                       {g.question}
                       <div className="small faint">
-                        {GAP_KINDS[g.kind] ?? g.kind} · {g.topic}
+                        {GAP_KINDS[g.kind as keyof typeof GAP_KINDS] ?? g.kind} · {g.topic}
                       </div>
                     </td>
                     <td className="small">

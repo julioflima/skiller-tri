@@ -7,3 +7,5 @@
 - `.env.local` aponta para o Postgres de produção: não altere dados existentes (em especial respostas) sem pedido explícito.
 - Mais de uma sessão pode estar editando esta pasta ao mesmo tempo (e o índice do git é compartilhado): commite só os
   arquivos que você mudou com `git commit -- <arquivos>`, nunca `git add -A` nem um `git commit` sem caminhos.
+- A IA da plataforma conhece tudo pela base em `lib/assistant/knowledge.ts`: ao mudar uma tela, uma regra, um cálculo ou a
+  arquitetura, atualize o trecho correspondente no mesmo commit.

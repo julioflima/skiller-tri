@@ -6,6 +6,7 @@ import { logout } from "@/app/auth-actions";
 import { NavLinks } from "./NavLinks";
 import { BrandMark } from "@/app/components/BrandMark";
 import { AssistantDock } from "./AssistantDock";
+import { seesGaps } from "@/lib/assistant/access";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,8 @@ export default async function PainelLayout({ children }: { children: React.React
         ]),
     ...(user.role === "gestor" ? [{ href: "/painel/equipe", label: "Equipe" }] : []),
     ...(user.role === "admin" ? [{ href: "/painel/testes", label: "Testes" }] : []),
-    // o que o assistente não soube responder: mostra o que falta na plataforma
-    ...(user.role === "admin" ? [{ href: "/painel/lacunas", label: "Lacunas" }] : []),
+    // o que o assistente não soube responder: só para quem está em LACUNAS_USER_IDS
+    ...(seesGaps(user) ? [{ href: "/painel/lacunas", label: "Lacunas" }] : []),
     { href: "/painel/metodos", label: "Métodos" },
     // minha conta e, para o dono, os donos da plataforma
     { href: "/painel/configuracoes", label: "Configurações" },
@@ -50,7 +51,7 @@ export default async function PainelLayout({ children }: { children: React.React
       </header>
       <NavLinks links={links} />
       {children}
-      <AssistantDock role={user.role} />
+      <AssistantDock role={user.role} name={user.name} />
     </main>
   );
 }
