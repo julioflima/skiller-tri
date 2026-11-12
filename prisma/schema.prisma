@@ -21,3 +21,39 @@ model Record {
 
   @@id([collection, id])
 }
+
+/// Conversas de cada pessoa com o assistente (app/painel/assistente). `messages` é o histórico no formato da API do Claude.
+model AssistantConversation {
+  id        String   @id
+  userId    String
+  title     String
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+/// Lacunas: o que o assistente não conseguiu responder ou fazer. O dono lê em /painel/lacunas para saber o que falta na plataforma.
+model AssistantGap {
+  id             String    @id
+  createdAt      DateTime  @default(now())
+  userId         String
+  userName       String
+  role           String
+  schoolId       String?
+  schoolName     String?
+  conversationId String?
+  /// O que a pessoa pediu, nas palavras dela.
+  question       String
+  /// Por que não deu: sem_funcao | sem_dados | conhecimento | permissao | outro
+  kind           String
+  topic          String
+  reason         String
+  /// aberta | resolvida | ignorada
+  status         String    @default("aberta")
+  resolvedAt     DateTime?
+  note           String?
+
+  @@index([status, createdAt(sort: Desc)])
+}

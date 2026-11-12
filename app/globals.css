@@ -622,3 +622,30 @@ thead .wm-q, tfoot .wm-q { font-size: 0.8rem; font-weight: 600; color: var(--ink
   border: 1.5px solid var(--line); border-radius: 14px; box-shadow: 0 6px 24px rgba(47, 58, 74, 0.12);
 }
 .wm-bar > span { flex: 1; font-size: 0.92rem; }
+
+/* ---------- assistente da plataforma (botão flutuante no painel) ---------- */
+.ai-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700;
+  background: var(--indigo); color: #fff; box-shadow: 0 8px 24px rgba(47, 58, 74, 0.25);
+}
+.ai-fab.on { padding: 8px 15px; font-size: 1.4rem; line-height: 1; }
+.ai-panel {
+  position: fixed; right: 20px; bottom: 78px; z-index: 60; width: min(420px, calc(100vw - 32px)); height: min(640px, calc(100vh - 110px));
+  display: flex; flex-direction: column; background: var(--paper); border: 1.5px solid var(--line); border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(47, 58, 74, 0.22); overflow: hidden;
+}
+.ai-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--paper-2); }
+.ai-select { flex: 1; min-width: 0; font: inherit; font-size: 0.88rem; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.ai-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px 12px; }
+.ai-log .chat-msg { max-width: 92%; }
+.ai-empty { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.ai-empty .btn { text-align: left; white-space: normal; }
+.ai-li { display: block; padding-left: 14px; text-indent: -10px; }
+.ai-li::before { content: "• "; }
+.ai-compose { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; border-top: 1px solid var(--line); }
+.ai-compose textarea { flex: 1; resize: none; font: inherit; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); }
+@media (max-width: 560px) {
+  .ai-fab { right: 16px; bottom: 16px; }
+  .ai-panel { right: 16px; left: 16px; width: auto; bottom: 70px; height: calc(100vh - 100px); }
+}

@@ -18,8 +18,18 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
 | `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Análise, Equipe e Dados e testes. |
 | `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (tempos de resposta, com as aplicações de todas as escolas) e landing page. |
+| `/painel/lacunas` | dono | Log do que o assistente não conseguiu responder ou fazer (quem pediu, tema, por quê), para saber o que falta na plataforma. |
 | `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
+
+## Assistente
+
+O botão **Assistente** (canto do painel, para todos os papéis) abre uma conversa com o Claude (Sonnet) que faz pela pessoa o que as
+telas fazem, com as mesmas permissões: consulta e cadastra pacientes, sessões, anotações e links; convida e edita a equipe; e, para o
+dono, escolas e testes. **Não exclui nada**: não há ferramenta de exclusão, e as que poderiam apagar algo por omissão (escala, etapa,
+responsáveis, testes de uma escola, imagens da landing) recusam. Senhas e imagens ficam só nas telas. O que ele não consegue atender vai
+para o log de **Lacunas** (`/painel/lacunas`). Conversas e lacunas ficam nas tabelas `AssistantConversation` e `AssistantGap`;
+ferramentas em `lib/assistant-tools.ts`, conversa em `app/painel/assistant-actions.ts`.
 
 ## Escolas e papéis
 
