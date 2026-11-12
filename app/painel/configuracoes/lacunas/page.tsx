@@ -27,7 +27,7 @@ export default async function GapsPage({ searchParams }: { searchParams: Promise
     prisma.assistantGap.groupBy({ by: ["topic"], where: { status: "aberta" }, _count: true, orderBy: { _count: { topic: "desc" } }, take: 12 }),
   ]);
   const count = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
-  const href = (s: Status, k?: string) => `/painel/lacunas?status=${s}${k ? `&tipo=${k}` : ""}`;
+  const href = (s: Status, k?: string) => `/painel/configuracoes/lacunas?status=${s}${k ? `&tipo=${k}` : ""}`;
 
   return (
     <>

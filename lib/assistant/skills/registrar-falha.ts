@@ -7,7 +7,7 @@ import { prisma } from "../../prisma";
 import type { SkillInput } from "./index";
 
 // Skill "registrar falha": depois de cada resposta, lê a troca (pedido, resposta e ações) e decide se a assistente deixou de
-// responder ou de fazer o que foi pedido. Se sim, anota no log de Lacunas (/painel/lacunas, só para quem está em
+// responder ou de fazer o que foi pedido. Se sim, anota no log de Lacunas (/painel/configuracoes/lacunas, só para quem está em
 // LACUNAS_USER_IDS). Roda em segundo plano, fora da conversa: a pessoa e a assistente não sabem dela.
 
 export const GAP_KINDS = {

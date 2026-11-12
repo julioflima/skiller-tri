@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setGapStatus } from "../assistant-actions";
+import { setGapStatus } from "../../assistant-actions";
 
 type Status = "aberta" | "resolvida" | "ignorada";
 

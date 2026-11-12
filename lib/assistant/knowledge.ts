@@ -161,7 +161,7 @@ const ARQUITETURA = `
 /** Só para quem vê o log de Lacunas (LACUNAS_USER_IDS). Os demais nem sabem que ele existe. */
 const LACUNAS = `
 # Lacunas (só para você)
-- Aba **Lacunas** (/painel/lacunas): log do que o assistente não soube responder ou fazer em todas as conversas da plataforma, com
+- Aba **Lacunas** em Configurações (/painel/configuracoes/lacunas): log do que o assistente não soube responder ou fazer em todas as conversas da plataforma, com
   quem pediu (papel e escola), tipo, tema e motivo; temas mais pedidos; marcar como resolvida (com nota), ignorada ou reabrir.
 - Quem anota é uma skill separada (lib/assistant/skills/registrar-falha.ts) que lê cada resposta depois de enviada; o assistente da
   conversa não anota nem comenta isso.

@@ -18,8 +18,8 @@ os resultados e a evolução sessão a sessão. Cada **teste** é um produto com
 | `/painel/equipe` | administrador da escola | Terapeutas e administradores da escola: cadastro direto ou convite por link. |
 | `/painel/escolas` | dono | Escolas; dentro de cada uma, as abas Pacientes, Análise, Equipe e Dados e testes. |
 | `/painel/testes` | dono | Testes: perguntas, classificações, respostas com pesos, etapas, qualidade (tempos de resposta, com as aplicações de todas as escolas) e landing page. |
-| `/painel/lacunas` | só `LACUNAS_USER_IDS` | Log do que o assistente não conseguiu responder ou fazer (quem pediu, tema, por quê), para saber o que falta na plataforma. |
-| `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta) e, para o dono, a aba Donos (convite por link). |
+| `/painel/configuracoes/lacunas` | só `LACUNAS_USER_IDS` | Log do que o assistente não conseguiu responder ou fazer (quem pediu, tema, por quê), para saber o que falta na plataforma. |
+| `/painel/configuracoes` | todos | Minha conta (nome, senha, link de respostas do terapeuta), para o dono a aba Donos (convite por link) e, só para `LACUNAS_USER_IDS`, a aba Lacunas. |
 | `/r/<link>` | paciente, cada mãe/pai, terapeuta | Página pessoal de respostas, sem senha. Cada pessoa vê só os próprios formulários. |
 
 ## Assistente
@@ -39,7 +39,7 @@ Roda no **LangChain** (`@langchain/anthropic`), em `lib/assistant/`:
 - `skills/`: rodam depois da resposta entregue (`after`), com Haiku: `memoria.ts` resume o que a pessoa costuma pedir
   (tabela `AssistantMemory`) e `registrar-falha.ts` avalia cada resposta e anota no log de **Lacunas** o que não foi atendido.
 
-O log de Lacunas (`/painel/lacunas`) só existe para os ids de `LACUNAS_USER_IDS`; para os demais a aba some, a página dá 404 e nem a
+O log de Lacunas (`/painel/configuracoes/lacunas`) só existe para os ids de `LACUNAS_USER_IDS`; fica como aba de Configurações; para os demais a aba some, a página dá 404 e nem a
 assistente sabe dele. Conversas na tabela `AssistantConversation` (mensagens no formato do LangChain), falhas em `AssistantGap`.
 
 ## Escolas e papéis

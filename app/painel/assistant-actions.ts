@@ -212,7 +212,7 @@ export async function setGapStatus(id: string, status: "aberta" | "resolvida" | 
       where: { id },
       data: { status, resolvedAt: status === "aberta" ? null : new Date(), ...(note !== undefined ? { note: note.trim() || null } : {}) },
     });
-    revalidatePath("/painel/lacunas");
+    revalidatePath("/painel/configuracoes/lacunas");
     return "Situação atualizada.";
   });
 }

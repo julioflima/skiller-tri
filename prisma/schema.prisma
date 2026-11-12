@@ -34,7 +34,7 @@ model AssistantConversation {
   @@index([userId, updatedAt(sort: Desc)])
 }
 
-/// Lacunas: o que o assistente não conseguiu responder ou fazer. O dono lê em /painel/lacunas para saber o que falta na plataforma.
+/// Lacunas: o que o assistente não conseguiu responder ou fazer. O dono lê em /painel/configuracoes/lacunas para saber o que falta na plataforma.
 model AssistantGap {
   id             String    @id
   createdAt      DateTime  @default(now())
