@@ -57,6 +57,13 @@ function window(history: BaseMessage[]): BaseMessage[] {
   let lastHuman = slice.length - 1;
   while (lastHuman > 0 && !HumanMessage.isInstance(slice[lastHuman])) lastHuman--;
   return slice.map((m, i) => {
+    // O raciocínio (thinking) fica preso ao system prompt em que nasceu, e o system muda entre mensagens
+    // (memória da pessoa, carteira, data): de rodadas anteriores, ele não volta à API.
+    if (i < lastHuman && AIMessage.isInstance(m) && Array.isArray(m.content)) {
+      const content = m.content.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking");
+      if (content.length === m.content.length) return m;
+      return new AIMessage({ content, tool_calls: m.tool_calls, id: m.id, additional_kwargs: m.additional_kwargs, response_metadata: m.response_metadata });
+    }
     if (i >= lastHuman || !ToolMessage.isInstance(m) || typeof m.content !== "string" || m.content.length <= OLD_RESULT) return m;
     return new ToolMessage({ tool_call_id: m.tool_call_id, status: m.status, content: `${m.content.slice(0, OLD_RESULT)}… (resultado antigo cortado)` });
   });
