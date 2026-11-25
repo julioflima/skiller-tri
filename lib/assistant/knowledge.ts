@@ -88,7 +88,7 @@ fica em todas as telas do painel.
 ## Fora do painel
 - **/** página inicial da plataforma: como funciona, testes publicados, quem vê o quê, contato para escolas.
 - **/teste/<endereço>** landing de cada teste (ex.: /teste/kay12), com identidade visual própria do teste.
-- **/entrar** login com e-mail e senha (sessão de 12 horas). **/convite/<código>** criar a conta a partir do convite.
+- **/entrar** login com e-mail e senha (a sessão se renova a cada uso e só expira depois de 30 dias sem entrar). **/convite/<código>** criar a conta a partir do convite.
 - **/r/<código>** página pessoal de respostas: "Para responder" e "Já enviados". No questionário, a pessoa toca no **símbolo** da
   resposta; pode voltar e revisar; ao final "Enviar respostas" (depois do envio não dá para alterar). Cada resposta é salva na hora.
 

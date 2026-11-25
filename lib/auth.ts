@@ -6,7 +6,8 @@ import { readDb } from "./db";
 import type { Db, User } from "./types";
 
 const COOKIE = "st_session";
-const MAX_AGE = 60 * 60 * 12; // 12 horas
+/** Validade da sessão sem uso. O `middleware.ts` renova o cookie a cada acesso (sessão deslizante). */
+const MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
 
 function secret() {
   return process.env.SESSION_SECRET || "dev-secret-troque-em-producao";
