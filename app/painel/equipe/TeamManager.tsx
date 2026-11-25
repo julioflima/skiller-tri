@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/app/components/useToast";
 import type { Result } from "@/lib/result";
 import { ROLE_LABEL, type Role, type SchoolRole } from "@/lib/roles";
-import { createUser, resetUserPassword, updateUser } from "../user-actions";
+import { resetUserPassword, updateUser } from "../user-actions";
 
 export type Member = { id: string; name: string; email: string; role: Role; active: boolean; patients: number };
 
@@ -32,46 +32,6 @@ function useRunner() {
       router.refresh();
     });
   return { run, pending, toast };
-}
-
-/** Cadastra direto uma pessoa da escola (terapeuta ou administrador da escola). */
-export function NewMemberForm() {
-  const { run, pending, toast } = useRunner();
-  const empty = { name: "", email: "", password: "", role: "terapeuta" as SchoolRole };
-  const [f, setF] = useState(empty);
-  return (
-    <section className="card">
-      {toast.node}
-      <h2>Cadastrar na escola</h2>
-      <p className="muted small">
-        Crie a conta com uma senha inicial e repasse à pessoa. Ela pode trocar a senha em &quot;Minha conta&quot;. O terapeuta responde os testes e analisa os
-        próprios pacientes; o administrador da escola cadastra pacientes, gera os links e cuida da equipe.
-      </p>
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          run(() => createUser(f), () => setF(empty));
-        }}
-      >
-        <input type="text" placeholder="Nome" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required style={{ flex: 2, minWidth: 160 }} />
-        <input type="email" placeholder="E-mail" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required style={{ flex: 2, minWidth: 180 }} />
-        <input
-          type="password"
-          placeholder="Senha inicial (mín. 8)"
-          autoComplete="new-password"
-          value={f.password}
-          onChange={(e) => setF({ ...f, password: e.target.value })}
-          required
-          style={{ flex: 1.5, minWidth: 160 }}
-        />
-        <SchoolRoleSelect value={f.role} onChange={(role) => setF({ ...f, role })} />
-        <button className="btn warm" disabled={pending}>
-          Cadastrar
-        </button>
-      </form>
-    </section>
-  );
 }
 
 export function MembersTable({ members, meId, title = "Equipe" }: { members: Member[]; meId: string; title?: string }) {

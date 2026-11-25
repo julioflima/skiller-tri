@@ -23,36 +23,6 @@ function checkTeamAccess(me: Parameters<typeof canManageTeam>[0], role: Role) {
   if (role === "admin" ? me.role !== "admin" : !canManageTeam(me)) fail("Você não pode mexer na equipe.");
 }
 
-export async function createUser(input: { name: string; email: string; password: string; role: Role }) {
-  return guard(async () => {
-    const me = await requireUser({ manager: true });
-    checkTeamAccess(me, roleOf(input.role));
-    const name = input.name.trim();
-    const email = input.email.trim().toLowerCase();
-    if (!name) fail("Informe o nome.");
-    if (!EMAIL.test(email)) fail("E-mail inválido.");
-    checkPassword(input.password);
-    const passwordHash = await hashPassword(input.password);
-    await updateDb((db) => {
-      if (db.users.some((u) => u.email === email)) fail("Já existe alguém com este e-mail.");
-      const role = roleOf(input.role);
-      db.users.push({
-        id: newId(),
-        name,
-        email,
-        passwordHash,
-        role,
-        schoolId: schoolFor(role),
-        active: true,
-        createdAt: new Date().toISOString(),
-        token: newToken(),
-      });
-    });
-    const label = ROLE_LABEL[roleOf(input.role)];
-    return `${label[0].toUpperCase()}${label.slice(1)} cadastrado.`;
-  });
-}
-
 export async function updateUser(id: string, input: { name: string; email: string; role: Role; active: boolean }) {
   return guard(async () => {
     const me = await requireUser({ manager: true });

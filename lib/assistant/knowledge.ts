@@ -21,15 +21,15 @@ const PRODUTO = `
   navegador de quem responde); perguntas sob revisão contínua com dados de qualidade (tempo de resposta).
 
 ## Papéis e o que cada um vê
-- **Dono** (papel interno admin): é da plataforma. Cria testes, convida outros donos, vê todos os pacientes, a análise, a equipe
+- **Dono** (papel interno admin): é da plataforma. Cria testes, convida outros donos, vê todos os pacientes, a equipe
   e a qualidade dos testes.
 - **Administrador da escola** (papel interno gestor): cadastra e edita pacientes, escolhe o terapeuta de cada um, gera os links e
   cuida da equipe (terapeutas e administradores). Não é terapeuta de paciente. Vê todos os pacientes.
 - **Terapeuta**: responde os testes sobre os próprios pacientes e analisa os próprios pacientes (resultados, sessões, anotações,
   o próprio link). Não cadastra pacientes nem mexe na equipe. Vê só os próprios pacientes.
 - **Paciente e cada responsável**: não têm conta. Cada um recebe um **link pessoal** (/r/<código>) e vê só os próprios formulários.
-- Uma pessoa entra na plataforma por **convite** (link válido por 7 dias; com e-mail, só aquele e-mail pode usar) ou cadastro direto
-  pelo administrador da escola (com senha inicial). O dono é sempre dono; pessoas da escola alternam entre terapeuta e administrador.
+- Uma pessoa entra na plataforma só por **convite** (link válido por 7 dias; com e-mail, só aquele e-mail pode usar); não há
+  cadastro direto com senha inicial. O dono é sempre dono; pessoas da escola alternam entre terapeuta e administrador.
   Só terapeuta acompanha paciente: para mudar o papel de um terapeuta com pacientes, passe os pacientes a outro antes.
 - Todos os testes ativos podem ser aplicados; um teste inativo não aceita novos pacientes.
 
@@ -55,11 +55,10 @@ fica em todas as telas do painel.
     sessões** (percentual geral de cada pessoa em cada sessão); exportar **CSV** (uma linha por resposta, com tempo de resposta).
     A página é imprimível.
   - Cada formulário aberto mostra pergunta a pergunta, a resposta, o tempo e as trocas.
-- **Análise** (/painel/analise; todos): visões "paciente sobre si", "mãe/pai", "terapeuta" ou "todas as visões
-  sobre o paciente"; números de pacientes com dados e tempo mediano; **Correlação entre habilidades** (Spearman padrão ou Pearson) e
-  relações mais fortes; **Grupos de perfis** (k-means, 2 a 5 grupos, mapa PCA, silhueta). O terapeuta vê só os próprios pacientes.
-- **Equipe** (/painel/equipe; administrador da escola e dono): cadastrar (nome, e-mail, papel, senha inicial
-  de 8+ caracteres), editar, ativar/desativar, redefinir senha; **Convidar por link** (nome e e-mail opcionais) com convites
+- **Análise entre pacientes** (correlação entre habilidades e grupos de perfis): **ainda pendente**, não está no painel. Se
+  perguntarem, diga que está em preparação; hoje os resultados ficam dentro de cada paciente (aba Resultados).
+- **Equipe** (/painel/equipe; administrador da escola e dono): lista da equipe com editar, ativar/desativar e
+  redefinir senha; **Convidar por link** (nome e e-mail opcionais) com convites
   pendentes, validade e "gerar novo link".
 - **Testes** (dono): lista com perguntas, classificações, etapas, pacientes, situação; criar teste (em branco, modelo 12 habilidades
   ou duplicar um existente); testes excluídos ficam no arquivo e podem ser restaurados. Dentro de um teste, abas:
@@ -78,7 +77,6 @@ fica em todas as telas do painel.
   - *Dados do teste*: nome, descrição, ativo; arquivar/excluir com confirmação por senha.
   - *Landing page*: endereço (/teste/<endereço>), publicar, slogan, título, texto, título e texto das classificações, logo, imagem de
     destaque, link do WhatsApp do botão "Falar com a equipe". "Ver landing page" abre a página ou a prévia do rascunho.
-- **Métodos** (todos): explica os métodos, onde aparecem e quantos dados pedem; não mostra dados.
 - **Configurações** (todos): nome, trocar senha, **meu link de respostas** (terapeuta: reúne os formulários de terapeuta de todos os
   seus pacientes); para o dono, a aba **Donos** (convite de donos).
 
@@ -123,8 +121,8 @@ descrições) pode ter mudado: consulte com ver_teste.
 - **Tempo de resposta** (Teste › Qualidade; algumas dezenas de respostas por pergunta): mediana do tempo com a aba visível até a
   escolha, somando revisões, e parcela de respostas rápidas demais (menos de 1,5 s). Aponta perguntas confusas ou não lidas.
 - **Correlação** de Spearman (padrão, por postos, mais robusta com poucos dados) ou Pearson (linear) entre habilidades, uma
-  observação por paciente na visão escolhida (Análise; aparece com 5 pessoas por par; ~30 para ler com segurança).
-- **Grupos de perfis** (Análise): k-means de 2 a 5 grupos sobre os percentuais, com mapa em PCA e silhueta (diz se os
+  observação por paciente na visão escolhida (Análise, em preparação; 5 pessoas por par; ~30 para ler com segurança).
+- **Grupos de perfis** (Análise, em preparação): k-means de 2 a 5 grupos sobre os percentuais, com mapa em PCA e silhueta (diz se os
   grupos são de fato distintos). Calcula com 6 pacientes com metade das habilidades respondidas; ~50 para os grupos significarem
   algo. Só a equipe vê.
 - **Cobertura mínima**: menos de 3 perguntas ativas por classificação e público usado = medida sem validade estatística.

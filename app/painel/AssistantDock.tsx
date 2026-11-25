@@ -28,7 +28,7 @@ const SUGGESTIONS: Record<string, { label: string; text: string }[]> = {
     { label: "Pendências", text: "Quais pacientes ainda não responderam o início do tratamento?" },
     { label: "Novo paciente", text: "Cadastre o paciente " },
     { label: "Equipe", text: "Quem está na minha equipe?" },
-    { label: "Como funciona", text: "Como leio a análise?" },
+    { label: "Como funciona", text: "Como leio os resultados de um paciente?" },
   ],
   terapeuta: [
     { label: "Meus pacientes", text: "Como estão os meus pacientes?" },

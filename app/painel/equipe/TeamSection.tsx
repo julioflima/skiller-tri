@@ -1,9 +1,9 @@
 import type { SessionUser } from "@/lib/auth";
 import type { Db } from "@/lib/types";
 import { InviteSection } from "./InviteSection";
-import { MembersTable, NewMemberForm } from "./TeamManager";
+import { MembersTable } from "./TeamManager";
 
-/** Equipe da escola (terapeutas e administradores): lista, cadastro e convites. Usada pelo dono e pelo administrador da escola. */
+/** Equipe da escola (terapeutas e administradores): lista e convites (as pessoas entram por convite). Usada pelo dono e pelo administrador da escola. */
 export function TeamSection({ db, me }: { db: Db; me: SessionUser }) {
   const now = new Date();
   const members = db.users
@@ -25,7 +25,6 @@ export function TeamSection({ db, me }: { db: Db; me: SessionUser }) {
   return (
     <>
       <MembersTable title="Equipe" members={members} meId={me.id} />
-      <NewMemberForm />
       <InviteSection invites={invites} team />
     </>
   );

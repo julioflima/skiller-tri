@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { median } from "@/lib/stats";
 import { FAST_MS, fmtSeconds, SLOW_MS } from "@/lib/timing";
 import type { Form, Test } from "@/lib/types";
-import { Stat } from "../../analise/parts";
 
 /**
  * Qualidade do instrumento: tempo de resposta por pergunta. Junta todas as aplicações do teste,
@@ -30,8 +28,7 @@ export function Quality({ test, forms }: { test: Test; forms: Form[] }) {
   return (
     <div className="stack">
       <p className="muted" style={{ margin: 0 }}>
-        Se as perguntas estão medindo bem, com todas as aplicações juntas. A explicação de cada método está em{" "}
-        <Link href="/painel/metodos">Métodos</Link>.
+        Se as perguntas estão medindo bem, com todas as aplicações juntas.
       </p>
 
       <div className="grid-3">
@@ -82,6 +79,16 @@ export function Quality({ test, forms }: { test: Test; forms: Form[] }) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: string | number; hint: string }) {
+  return (
+    <div className="card tight">
+      <div className="faint">{label}</div>
+      <div style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem" }}>{value}</div>
+      <div className="faint">{hint}</div>
     </div>
   );
 }

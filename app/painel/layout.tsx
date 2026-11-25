@@ -10,14 +10,12 @@ export const dynamic = "force-dynamic";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePageUser();
-  // todos: pacientes e análise (o terapeuta só dos próprios pacientes); dono e administrador da escola: equipe;
-  // dono: testes. Métodos explica os métodos para todos, sem dados.
+  // todos: pacientes (o terapeuta só os próprios); dono e administrador da escola: equipe;
+  // dono: testes.
   const links = [
     { href: "/painel", label: "Pacientes" },
-    { href: "/painel/analise", label: "Análise" },
     ...(user.role !== "terapeuta" ? [{ href: "/painel/equipe", label: "Equipe" }] : []),
     ...(user.role === "admin" ? [{ href: "/painel/testes", label: "Testes" }] : []),
-    { href: "/painel/metodos", label: "Métodos" },
     // minha conta e, para o dono, os donos da plataforma
     { href: "/painel/configuracoes", label: "Configurações" },
   ];
