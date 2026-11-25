@@ -35,7 +35,13 @@ export type ConversationView = ConversationSummary & { turns: AssistantTurn[] };
 
 /** Sonnet: bom com ferramentas e bem mais barato que o Opus. */
 const MODEL = "claude-sonnet-5-5";
-const MAX_STEPS = 16;
+/** Passos (idas ao modelo) por chamada; o tempo costuma acabar antes. */
+const MAX_STEPS = 40;
+/**
+ * Tempo de uma chamada antes de parar e pedir à tela que continue: a função da Vercel vive até 300 s, e um passo
+ * pode levar mais de um minuto. Parado aqui, o histórico já está salvo e a tela chama continueAssistant sozinha.
+ */
+const TIME_BUDGET_MS = 190_000;
 /** Mensagens do histórico que vão para o modelo a cada pedido. */
 const HISTORY = 60;
 const MAX_TEXT = 4000;
@@ -60,14 +66,14 @@ function windowStart(history: BaseMessage[]): number {
  * Parte do histórico que vai ao modelo: a partir de `start` (fixo durante uma mensagem, porque o raciocínio dos passos
  * desta rodada fica preso ao começo da conversa que ele viu) e com resultados antigos de ferramentas encurtados.
  */
-function window(history: BaseMessage[], start: number): BaseMessage[] {
+function window(history: BaseMessage[], start: number, fresh: number): BaseMessage[] {
   const slice = history.slice(start);
   let lastHuman = slice.length - 1;
   while (lastHuman > 0 && !HumanMessage.isInstance(slice[lastHuman])) lastHuman--;
   return slice.map((m, i) => {
-    // O raciocínio (thinking) fica preso ao system prompt em que nasceu, e o system muda entre mensagens
-    // (memória da pessoa, carteira, data): de rodadas anteriores, ele não volta à API.
-    if (i < lastHuman && AIMessage.isInstance(m) && Array.isArray(m.content)) {
+    // O raciocínio (thinking) fica preso ao system prompt em que nasceu, e o system muda entre chamadas
+    // (memória da pessoa, carteira, data): só o desta chamada (a partir de `fresh`) volta à API.
+    if (i + start < fresh && AIMessage.isInstance(m) && Array.isArray(m.content)) {
       const content = m.content.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking");
       if (content.length === m.content.length) return m;
       return new AIMessage({ content, tool_calls: m.tool_calls, id: m.id, additional_kwargs: m.additional_kwargs, response_metadata: m.response_metadata });
@@ -148,73 +154,95 @@ async function origin() {
   return `${h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https")}://${host}`;
 }
 
+type TurnResult = { conversation: ConversationView; conversations: ConversationSummary[]; changed: boolean; continuar: boolean };
+
 /** Uma mensagem da pessoa (numa conversa ou começando uma): a assistente responde usando as ferramentas quantas vezes precisar. */
 export async function sendAssistantMessage(conversationId: string | null, text: string) {
-  return guard<{ conversation: ConversationView; conversations: ConversationSummary[]; changed: boolean }>(async () => {
-    const user = await requireUser();
+  return guard<TurnResult>(async () => {
     const said = text.trim().slice(0, MAX_TEXT);
     if (!said) fail("Escreva uma mensagem.");
-    const { apiKey, workspaceId } = aiConfig();
-    if (!apiKey) fail("O assistente não está configurado no servidor.");
-    const clientOptions = workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : undefined;
-
-    let id = conversationId;
-    let history: BaseMessage[];
-    if (id) history = load((await ownConversation(user, id)).messages);
-    else {
-      id = newId();
-      history = [];
-      await prisma.assistantConversation.create({ data: { id, userId: user.id, title: said.replace(/\s+/g, " ").slice(0, 70), messages: [] } });
-    }
-    const convId = id;
-    const push = async (...m: BaseMessage[]) => {
-      history = [...history, ...m];
-      const stored = JSON.parse(JSON.stringify(mapChatMessagesToStoredMessages(history))) as Prisma.InputJsonValue;
-      await prisma.assistantConversation.update({ where: { id: convId }, data: { messages: stored } });
-    };
-    await push(new HumanMessage(said));
-    const start = windowStart(history);
-
-    const { system, school } = await userContext(user);
-    const ctx = { user, origin: await origin() };
-    const llm = new ChatAnthropic({ model: MODEL, apiKey, maxTokens: 8000, maxRetries: 2, clientOptions }).bindTools(TOOL_DEFINITIONS);
-    const done: { label: string; ok: boolean; detail?: string }[] = [];
-    let changed = false;
-    let finished = false;
-    for (let step = 0; step < MAX_STEPS && !finished; step++) {
-      let reply: AIMessage;
-      try {
-        reply = (await llm.invoke([system, ...window(history, start)])) as AIMessage;
-      } catch (e) {
-        console.error("assistant", e);
-        fail(aiErrorMessage(e));
-      }
-      const calls = reply.tool_calls ?? [];
-      if (!calls.length) {
-        await push(textOf(reply).trim() ? reply : new AIMessage("Não consegui responder agora. Tente de novo."));
-        finished = true;
-        break;
-      }
-      // uma de cada vez: cada alteração lê o estado deixado pela anterior
-      const results: ToolMessage[] = [];
-      for (const call of calls) {
-        const out = await runTool(ctx, call.name, (call.args ?? {}) as Record<string, unknown>);
-        if (out.ok && out.write) changed = true;
-        done.push({ label: out.label, ok: out.ok, detail: out.ok ? undefined : out.text });
-        results.push(new ToolMessage({ tool_call_id: call.id ?? "", content: out.text, status: out.ok ? "success" : "error" }));
-      }
-      await push(reply, ...results);
-    }
-    if (!finished) await push(new AIMessage("Parei aqui para não passar do limite de passos desta mensagem. Diga se devo continuar."));
-
-    // skills em segundo plano, depois de a resposta chegar: memória da pessoa e registro de falhas
-    const turns = turnsOf(history);
-    const answer = turns.at(-1)?.role === "assistant" ? turns.at(-1)!.text : "";
-    after(() => runSkills({ user, school, conversationId: convId, question: said, answer, actions: done, apiKey, clientOptions }));
-
-    const row = await ownConversation(user, convId);
-    return { data: { conversation: { ...summary(row), turns }, conversations: await listFor(user), changed } };
+    return { data: await runTurn(await requireUser(), conversationId, said) };
   });
+}
+
+/** Continua a resposta que parou pelo tempo de uma chamada (a tela chama sozinha enquanto `continuar` vier true). */
+export async function continueAssistant(conversationId: string) {
+  return guard<TurnResult>(async () => ({ data: await runTurn(await requireUser(), conversationId, null) }));
+}
+
+async function runTurn(user: SessionUser, conversationId: string | null, said: string | null): Promise<TurnResult> {
+  const began = Date.now();
+  const { apiKey, workspaceId } = aiConfig();
+  if (!apiKey) fail("O assistente não está configurado no servidor.");
+  const clientOptions = workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : undefined;
+
+  let id = conversationId;
+  let history: BaseMessage[];
+  if (id) history = load((await ownConversation(user, id)).messages);
+  else {
+    if (!said) fail("Conversa não encontrada.");
+    id = newId();
+    history = [];
+    await prisma.assistantConversation.create({ data: { id, userId: user.id, title: said.replace(/\s+/g, " ").slice(0, 70), messages: [] } });
+  }
+  const convId = id;
+  const push = async (...m: BaseMessage[]) => {
+    history = [...history, ...m];
+    const stored = JSON.parse(JSON.stringify(mapChatMessagesToStoredMessages(history))) as Prisma.InputJsonValue;
+    await prisma.assistantConversation.update({ where: { id: convId }, data: { messages: stored } });
+  };
+  if (said) await push(new HumanMessage(said));
+  // a pergunta da rodada: a última mensagem da pessoa (numa continuação, a que começou a resposta)
+  const question = said ?? [...history].reverse().find((m) => HumanMessage.isInstance(m))?.text ?? "";
+  // continuar só faz sentido no meio de uma resposta (a última mensagem é resultado de ferramenta)
+  if (!said && !ToolMessage.isInstance(history.at(-1))) {
+    const row = await ownConversation(user, convId);
+    return { conversation: { ...summary(row), turns: turnsOf(history) }, conversations: await listFor(user), changed: false, continuar: false };
+  }
+  const start = windowStart(history);
+  const fresh = said ? history.length - 1 : history.length;
+
+  const { system, school } = await userContext(user);
+  const ctx = { user, origin: await origin() };
+  const llm = new ChatAnthropic({ model: MODEL, apiKey, maxTokens: 8000, maxRetries: 2, clientOptions }).bindTools(TOOL_DEFINITIONS);
+  const done: { label: string; ok: boolean; detail?: string }[] = [];
+  let changed = false;
+  let finished = false;
+  for (let step = 0; step < MAX_STEPS && !finished && Date.now() - began < TIME_BUDGET_MS; step++) {
+    let reply: AIMessage;
+    try {
+      reply = (await llm.invoke([system, ...window(history, start, fresh)])) as AIMessage;
+    } catch (e) {
+      console.error("assistant", e);
+      fail(aiErrorMessage(e));
+    }
+    const calls = reply.tool_calls ?? [];
+    if (!calls.length) {
+      await push(textOf(reply).trim() ? reply : new AIMessage("Não consegui responder agora. Tente de novo."));
+      finished = true;
+      break;
+    }
+    // uma de cada vez: cada alteração lê o estado deixado pela anterior
+    const results: ToolMessage[] = [];
+    for (const call of calls) {
+      const out = await runTool(ctx, call.name, (call.args ?? {}) as Record<string, unknown>);
+      if (out.ok && out.write) changed = true;
+      done.push({ label: out.label, ok: out.ok, detail: out.ok ? undefined : out.text });
+      results.push(new ToolMessage({ tool_call_id: call.id ?? "", content: out.text, status: out.ok ? "success" : "error" }));
+    }
+    await push(reply, ...results);
+  }
+
+  // skills em segundo plano só quando a resposta termina: memória da pessoa e registro de falhas
+  // (no meio da resposta, mudar a memória mudaria o system e o raciocínio desta rodada)
+  const turns = turnsOf(history);
+  if (finished) {
+    const answer = turns.at(-1)?.role === "assistant" ? turns.at(-1)!.text : "";
+    after(() => runSkills({ user, school, conversationId: convId, question, answer, actions: done, apiKey, clientOptions }));
+  }
+
+  const row = await ownConversation(user, convId);
+  return { conversation: { ...summary(row), turns }, conversations: await listFor(user), changed, continuar: !finished };
 }
 
 // ---------- log de lacunas (só para quem está em LACUNAS_USER_IDS) ----------

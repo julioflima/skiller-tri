@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ClaudeMark } from "@/app/components/ClaudeMark";
 import {
   listAssistantConversations,
+  continueAssistant,
   loadAssistantConversation,
   renameAssistantConversation,
   sendAssistantMessage,
@@ -137,6 +138,9 @@ export function AssistantDock({ role, name }: { role: string; name: string }) {
     input.current?.focus();
   };
 
+  /** Rodadas seguidas que a tela pede sozinha numa resposta longa (cada uma tem até ~3 min no servidor). */
+  const MAX_ROUNDS = 30;
+
   const submit = () => {
     const said = text.trim();
     if (!said || sending) return;
@@ -144,36 +148,48 @@ export function AssistantDock({ role, name }: { role: string; name: string }) {
     setError("");
     setPendingText(said);
     startSend(async () => {
-      let r: Awaited<ReturnType<typeof sendAssistantMessage>>;
+      let id = activeId;
+      let changed = false;
       try {
-        r = await sendAssistantMessage(activeId || null, said);
+        let r = await sendAssistantMessage(id || null, said);
+        setPendingText("");
+        for (let round = 0; ; round++) {
+          if (!r.ok) {
+            setError(r.error);
+            if (round === 0) setText(said);
+            break;
+          }
+          id = r.data!.conversation.id;
+          changed ||= r.data!.changed;
+          setActiveId(id);
+          setTurns(r.data!.conversation.turns);
+          setList(r.data!.conversations);
+          remember(id);
+          // resposta longa: o servidor parou pelo tempo de uma chamada e o que fez está salvo; segue sozinho
+          if (!r.data!.continuar) break;
+          if (round >= MAX_ROUNDS) {
+            setError("A resposta está muito longa. O que já foi feito está salvo acima: peça para continuar.");
+            break;
+          }
+          if (changed) router.refresh();
+          r = await continueAssistant(id);
+        }
       } catch {
-        // a resposta não chegou (conexão caiu, tempo esgotado ou deploy novo com a página aberta). O servidor grava
-        // cada passo, então o que já foi feito está salvo: traz a conversa de volta em vez de quebrar a tela.
+        // a resposta não chegou (conexão caiu ou deploy novo com a página aberta). O servidor grava cada passo,
+        // então o que já foi feito está salvo: traz a conversa de volta em vez de quebrar a tela.
         setPendingText("");
         try {
           const all = await listAssistantConversations();
-          const id = activeId || (all.ok ? all.data![0]?.id : "");
+          const back = id || (all.ok ? all.data![0]?.id : "");
           if (all.ok) setList(all.data!);
-          if (id) await show(id);
+          if (back) await show(back);
           setError("A resposta foi interrompida antes do fim. O que já foi feito está salvo acima: peça para continuar.");
         } catch {
-          setText(said);
+          if (!id) setText(said);
           setError("A plataforma foi atualizada enquanto esta página estava aberta. Recarregue a página (F5) e envie de novo.");
         }
-        return;
       }
-      setPendingText("");
-      if (!r.ok) {
-        setError(r.error);
-        setText(said);
-        return;
-      }
-      setActiveId(r.data!.conversation.id);
-      setTurns(r.data!.conversation.turns);
-      setList(r.data!.conversations);
-      remember(r.data!.conversation.id);
-      if (r.data!.changed) router.refresh();
+      if (changed) router.refresh();
     });
   };
 

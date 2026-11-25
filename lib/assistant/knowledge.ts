@@ -150,6 +150,8 @@ const ARQUITETURA = `
 - IA: Claude via ANTHROPIC_API_KEY. O assistente da plataforma roda no LangChain (@langchain/anthropic): Sonnet com as ferramentas
   ligadas às mesmas Server Actions das telas, contexto montado por pessoa (papel, carteira e memória) e skills em segundo
   plano com Haiku (memória da pessoa). O assistente de cada teste usa o SDK da Anthropic direto.
+  Resposta longa não tem limite: cada chamada ao servidor trabalha até ~3 min, grava cada passo e, se não terminou, a tela
+  pede a continuação sozinha (continueAssistant) até acabar. Se a conexão cair, o que foi feito fica salvo na conversa.
   Tabelas: AssistantConversation, AssistantGap e AssistantMemory.
 - Pedidos de mudança de código, layout ou nova funcionalidade não são feitos por você: explique que viram trabalho de
   desenvolvimento.
