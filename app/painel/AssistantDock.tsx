@@ -144,7 +144,25 @@ export function AssistantDock({ role, name }: { role: string; name: string }) {
     setError("");
     setPendingText(said);
     startSend(async () => {
-      const r = await sendAssistantMessage(activeId || null, said);
+      let r: Awaited<ReturnType<typeof sendAssistantMessage>>;
+      try {
+        r = await sendAssistantMessage(activeId || null, said);
+      } catch {
+        // a resposta não chegou (conexão caiu, tempo esgotado ou deploy novo com a página aberta). O servidor grava
+        // cada passo, então o que já foi feito está salvo: traz a conversa de volta em vez de quebrar a tela.
+        setPendingText("");
+        try {
+          const all = await listAssistantConversations();
+          const id = activeId || (all.ok ? all.data![0]?.id : "");
+          if (all.ok) setList(all.data!);
+          if (id) await show(id);
+          setError("A resposta foi interrompida antes do fim. O que já foi feito está salvo acima: peça para continuar.");
+        } catch {
+          setText(said);
+          setError("A plataforma foi atualizada enquanto esta página estava aberta. Recarregue a página (F5) e envie de novo.");
+        }
+        return;
+      }
       setPendingText("");
       if (!r.ok) {
         setError(r.error);
