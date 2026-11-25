@@ -44,7 +44,8 @@ const MAX_STEPS = 40;
 const TIME_BUDGET_MS = 190_000;
 /** Mensagens do histórico que vão para o modelo a cada pedido. */
 const HISTORY = 60;
-const MAX_TEXT = 4000;
+/** Tamanho máximo de uma mensagem: cabe colar um questionário inteiro (o de 60 perguntas tem ~20 mil caracteres). */
+const MAX_TEXT = 100_000;
 const OLD_RESULT = 1500;
 
 const textOf = (m: BaseMessage) =>
