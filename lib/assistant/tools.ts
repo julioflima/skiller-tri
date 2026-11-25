@@ -5,11 +5,11 @@ import { readDb } from "../db";
 import { formProgress, GUARDIAN_LABEL, respondentName } from "../forms";
 import { fail, type Result } from "../result";
 import { ROLE_LABEL } from "../roles";
+import { SCHOOL_NAME } from "../schools";
 import { band, scoreForms, seriesLabel, SERIES_ORDER } from "../scoring";
 import type { Db, Patient, Scale, Stage, Test } from "../types";
 import { changeOwnName, updateUser } from "@/app/painel/user-actions";
 import { createInvite, renewInvite } from "@/app/painel/invite-actions";
-import { createSchool, updateSchool } from "@/app/painel/school-actions";
 import {
   createPatient,
   createSession,
@@ -36,7 +36,7 @@ import {
 
 // Ferramentas do assistente da plataforma (o agente em app/painel/assistant-actions.ts as liga ao modelo pelo LangChain). Cada uma reaproveita a ação da tela correspondente, com as mesmas
 // validações e permissões (quem não pode, recebe o mesmo erro da tela). Não existe ferramenta de exclusão:
-// as que poderiam apagar algo por omissão (escala, etapa, landing, escola) recusam quando algo sumiria.
+// as que poderiam apagar algo por omissão (escala, etapa, landing) recusam quando algo sumiria.
 
 type Input = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 export type ToolContext = { user: SessionUser; origin: string };
@@ -51,12 +51,12 @@ const obj = (properties: Record<string, unknown>, required: string[] = []) => ({
 
 export const TOOLS: Tool[] = [
   // ---------- leitura ----------
-  { name: "ver_contexto", label: "Consultou a plataforma", description: "Quem é o usuário, a escola dele, as escolas e os testes que ele pode ver, com ids. Chame primeiro quando precisar de ids.", input_schema: obj({}) },
+  { name: "ver_contexto", label: "Consultou a plataforma", description: "Quem é o usuário, os testes e os terapeutas que ele pode ver, com ids. Chame primeiro quando precisar de ids.", input_schema: obj({}) },
   {
     name: "listar_pacientes",
     label: "Listou pacientes",
-    description: "Pacientes que o usuário pode ver, com terapeuta, teste, escola e quantas sessões. Busca por nome (parte do nome serve).",
-    input_schema: obj({ busca: str, escolaId: str, incluirArquivados: bool }),
+    description: "Pacientes que o usuário pode ver, com terapeuta, teste e quantas sessões. Busca por nome (parte do nome serve).",
+    input_schema: obj({ busca: str, incluirArquivados: bool }),
   },
   {
     name: "ver_paciente",
@@ -73,8 +73,8 @@ export const TOOLS: Tool[] = [
   {
     name: "ver_equipe",
     label: "Consultou a equipe",
-    description: "Pessoas e convites pendentes de uma escola (sem escolaId: a do usuário; o dono pode ver os donos com escolaId \"donos\").",
-    input_schema: obj({ escolaId: str }),
+    description: "Pessoas e convites pendentes da equipe da escola (terapeutas e administradores); com donos true, os donos da plataforma (só o dono).",
+    input_schema: obj({ donos: bool }),
   },
   // ---------- pacientes ----------
   {
@@ -88,7 +88,6 @@ export const TOOLS: Tool[] = [
         birthDate: { type: "string", description: "AAAA-MM-DD" },
         email: str,
         testId: str,
-        schoolId: { type: "string", description: "Só o dono escolhe; os demais usam a própria escola." },
         therapistId: str,
         guardians: { type: "array", items: obj({ kind: { type: "string", enum: ["mae", "pai"] }, name: str, email: str, phone: str }, ["kind", "name"]) },
       },
@@ -108,7 +107,6 @@ export const TOOLS: Tool[] = [
         birthDate: str,
         email: str,
         testId: str,
-        schoolId: str,
         therapistId: str,
         guardians: { type: "array", items: obj({ id: str, kind: { type: "string", enum: ["mae", "pai"] }, name: str, email: str, phone: str }, ["kind", "name"]) },
       },
@@ -133,31 +131,23 @@ export const TOOLS: Tool[] = [
     input_schema: obj({ patientId: str, quem: str }, ["patientId", "quem"]),
   },
   { name: "sortear_de_novo", label: "Sorteou o formulário de novo", write: true, description: "Sorteia de novo as perguntas de um formulário que ainda não tem respostas.", input_schema: obj({ formId: str }, ["formId"]) },
-  // ---------- equipe e escolas ----------
+  // ---------- equipe ----------
   {
     name: "convidar_pessoa",
     label: "Criou convite",
     write: true,
     description: "Cria um link de convite para alguém criar a própria conta. role: terapeuta, gestor (administrador da escola) ou admin (dono, só o dono convida).",
-    input_schema: obj({ name: str, email: str, role: { type: "string", enum: ["terapeuta", "gestor", "admin"] }, schoolId: str }, ["role"]),
+    input_schema: obj({ name: str, email: str, role: { type: "string", enum: ["terapeuta", "gestor", "admin"] } }, ["role"]),
   },
   { name: "renovar_convite", label: "Renovou convite", write: true, description: "Gera um novo link para um convite pendente (o anterior para de funcionar).", input_schema: obj({ id: str }, ["id"]) },
   {
     name: "editar_pessoa",
     label: "Editou pessoa da equipe",
     write: true,
-    description: "Edita nome, e-mail, papel, escola ou se a conta está ativa (desativar não apaga). Omita o que não muda.",
-    input_schema: obj({ id: str, name: str, email: str, role: { type: "string", enum: ["terapeuta", "gestor", "admin"] }, schoolId: str, active: bool }, ["id"]),
+    description: "Edita nome, e-mail, papel ou se a conta está ativa (desativar não apaga). Omita o que não muda.",
+    input_schema: obj({ id: str, name: str, email: str, role: { type: "string", enum: ["terapeuta", "gestor", "admin"] }, active: bool }, ["id"]),
   },
   { name: "alterar_meu_nome", label: "Alterou o próprio nome", write: true, description: "Altera o nome do próprio usuário.", input_schema: obj({ name: str }, ["name"]) },
-  { name: "criar_escola", label: "Criou escola", write: true, description: "Cria uma escola (só o dono).", input_schema: obj({ name: str }, ["name"]) },
-  {
-    name: "editar_escola",
-    label: "Editou escola",
-    write: true,
-    description: "Edita nome, se está ativa e acrescenta testes aplicados (só o dono). testIds são somados aos atuais; tirar testes de uma escola não é possível por aqui.",
-    input_schema: obj({ id: str, name: str, active: bool, testIds: { type: "array", items: str } }, ["id"]),
-  },
   // ---------- testes (só o dono) ----------
   {
     name: "criar_teste",
@@ -244,20 +234,19 @@ function seePatient(db: Db, user: SessionUser, id: string) {
 }
 
 function visibleTest(db: Db, user: SessionUser, id: string) {
-  const t = testsFor(db, user).find((x) => x.id === id) ?? (user.role !== "admin" ? undefined : db.tests.find((x) => x.id === id));
+  const t = testsFor(db).find((x) => x.id === id) ?? (user.role !== "admin" ? undefined : db.tests.find((x) => x.id === id));
   if (!t) fail("Teste não encontrado.");
   return t;
 }
 
 function context(db: Db, user: SessionUser) {
-  const schools = user.role === "admin" ? db.schools : db.schools.filter((s) => s.id === user.schoolId);
   return json({
-    usuario: { id: user.id, nome: user.name, email: user.email, papel: ROLE_LABEL[user.role], role: user.role, escolaId: user.schoolId },
-    escolas: schools.map((s) => ({ id: s.id, nome: s.name, ativa: s.active, testes: s.testIds.map((id) => db.tests.find((t) => t.id === id)?.name ?? id) })),
-    testes: testsFor(db, user).map((t) => ({ id: t.id, nome: t.name, ativo: t.active, perguntas: t.questions.filter((q) => q.active).length, classificacoes: t.categories.length })),
+    usuario: { id: user.id, nome: user.name, email: user.email, papel: ROLE_LABEL[user.role], role: user.role },
+    escola: SCHOOL_NAME,
+    testes: testsFor(db).map((t) => ({ id: t.id, nome: t.name, ativo: t.active, perguntas: t.questions.filter((q) => q.active).length, classificacoes: t.categories.length })),
     terapeutas: db.users
-      .filter((u) => u.role === "terapeuta" && u.active && (user.role === "admin" || u.schoolId === user.schoolId))
-      .map((u) => ({ id: u.id, nome: u.name, escolaId: u.schoolId })),
+      .filter((u) => u.role === "terapeuta" && u.active)
+      .map((u) => ({ id: u.id, nome: u.name })),
   });
 }
 
@@ -266,7 +255,6 @@ function patients(db: Db, user: SessionUser, input: Input) {
   const list = db.patients
     .filter((p) => canSeePatient(user, p))
     .filter((p) => input.incluirArquivados || !p.archived)
-    .filter((p) => !input.escolaId || p.schoolId === input.escolaId)
     .filter((p) => !q || p.name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().includes(q));
   return json({
     total: list.length,
@@ -276,7 +264,6 @@ function patients(db: Db, user: SessionUser, input: Input) {
       arquivado: !!p.archived,
       terapeuta: userName(db, p.therapistId),
       teste: db.tests.find((t) => t.id === p.testId)?.name,
-      escola: db.schools.find((s) => s.id === p.schoolId)?.name,
       sessoes: db.sessions.filter((s) => s.patientId === p.id).length,
     })),
     mostrados: Math.min(list.length, 80),
@@ -297,7 +284,6 @@ function patientDetail(db: Db, user: SessionUser, origin: string, id: string) {
     nascimento: p.birthDate,
     email: p.email,
     arquivado: !!p.archived,
-    escola: db.schools.find((s) => s.id === p.schoolId)?.name,
     terapeuta: { id: p.therapistId, nome: userName(db, p.therapistId) },
     teste: test ? { id: test.id, nome: test.name } : null,
     responsaveis: p.guardians.map((g) => ({ id: g.id, tipo: GUARDIAN_LABEL[g.kind], nome: g.name, email: g.email, telefone: g.phone, link: manager ? link(g.token) : undefined })),
@@ -337,11 +323,9 @@ function testDetail(db: Db, user: SessionUser, id: string) {
   });
 }
 
-function team(db: Db, user: SessionUser, schoolId?: string) {
-  const owners = schoolId === "donos";
-  const sid = owners ? undefined : (schoolId || user.schoolId);
-  if (owners ? user.role !== "admin" : !canManageTeam(user, sid)) fail("Você não pode ver a equipe desta escola.");
-  const sameGroup = (x: { role: string; schoolId?: string }) => (owners ? x.role === "admin" : x.role !== "admin" && x.schoolId === sid);
+function team(db: Db, user: SessionUser, owners: boolean) {
+  if (owners ? user.role !== "admin" : !canManageTeam(user)) fail(owners ? "Apenas o dono vê os donos." : "Você não pode ver a equipe.");
+  const sameGroup = (x: { role: string }) => (owners ? x.role === "admin" : x.role !== "admin");
   return json({
     pessoas: db.users.filter(sameGroup).map((u) => ({ id: u.id, nome: u.name, email: u.email, papel: ROLE_LABEL[u.role], role: u.role, ativo: u.active })),
     convitesPendentes: db.invites.filter((i) => !i.acceptedAt && sameGroup(i)).map((i) => ({ id: i.id, nome: i.name, email: i.email, papel: ROLE_LABEL[i.role], expira: i.expiresAt })),
@@ -364,7 +348,6 @@ function patientInput(p: Patient | undefined, input: Input): PatientInput {
     birthDate: input.birthDate ?? p?.birthDate,
     email: input.email ?? p?.email,
     testId: input.testId ?? p?.testId ?? "",
-    schoolId: input.schoolId ?? p?.schoolId,
     therapistId: input.therapistId ?? p?.therapistId,
     guardians: guardians.map((g: Input) => ({ id: g.id, kind: g.kind, name: g.name, email: g.email, phone: g.phone })),
   };
@@ -388,7 +371,7 @@ async function run(ctx: ToolContext, name: string, input: Input): Promise<{ ok: 
     case "ver_teste":
       return { ok: true, text: testDetail(db, user, input.id) };
     case "ver_equipe":
-      return { ok: true, text: team(db, user, input.escolaId) };
+      return { ok: true, text: team(db, user, !!input.donos) };
 
     case "cadastrar_paciente": {
       const r = await createPatient(patientInput(undefined, input));
@@ -410,7 +393,7 @@ async function run(ctx: ToolContext, name: string, input: Input): Promise<{ ok: 
       return done(await redrawForm(input.formId));
 
     case "convidar_pessoa": {
-      const r = await createInvite({ name: String(input.name ?? ""), email: String(input.email ?? ""), role: input.role, schoolId: input.schoolId || user.schoolId });
+      const r = await createInvite({ name: String(input.name ?? ""), email: String(input.email ?? ""), role: input.role });
       if (!r.ok) return done(r);
       const fresh = await readDb();
       const inv = [...fresh.invites].filter((i) => i.invitedBy === user.id && !i.acceptedAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
@@ -429,23 +412,12 @@ async function run(ctx: ToolContext, name: string, input: Input): Promise<{ ok: 
           name: input.name ?? u.name,
           email: input.email ?? u.email,
           role: input.role ?? u.role,
-          schoolId: input.schoolId ?? u.schoolId,
           active: input.active ?? u.active,
         }),
       );
     }
     case "alterar_meu_nome":
       return done(await changeOwnName(String(input.name ?? "")));
-    case "criar_escola": {
-      const r = await createSchool(String(input.name ?? ""));
-      return done(r, r.ok ? `id ${r.data?.id}` : undefined);
-    }
-    case "editar_escola": {
-      const s = db.schools.find((x) => x.id === input.id);
-      if (!s) fail("Escola não encontrada.");
-      const testIds = [...new Set([...s.testIds, ...((input.testIds as string[]) ?? [])])];
-      return done(await updateSchool(s.id, { name: input.name ?? s.name, active: input.active ?? s.active, testIds }));
-    }
 
     case "criar_teste": {
       const r = await createTest(String(input.name ?? ""), String(input.modo ?? "vazio"));

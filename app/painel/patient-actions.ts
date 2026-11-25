@@ -4,6 +4,7 @@ import { canSeePatient, managesPatients, requireUser } from "@/lib/auth";
 import { newId, newToken, updateDb } from "@/lib/db";
 import { buildForms, ensureInitialForms } from "@/lib/forms";
 import { fail, guard } from "@/lib/result";
+import { SCHOOL_ID } from "@/lib/schools";
 import type { Db, Guardian, GuardianKind, Patient } from "@/lib/types";
 
 export type GuardianInput = { id?: string; kind: GuardianKind; name: string; email?: string; phone?: string };
@@ -12,8 +13,6 @@ export type PatientInput = {
   birthDate?: string;
   email?: string;
   testId: string;
-  /** Só o administrador escolhe; o terapeuta cadastra sempre na própria escola. */
-  schoolId?: string;
   therapistId?: string;
   guardians: GuardianInput[];
 };
@@ -37,19 +36,16 @@ function getPatient(db: Db, user: SessionUser, id: string) {
   return p;
 }
 
-/** Escola, terapeuta e teste precisam combinar: o terapeuta é da escola e a escola aplica o teste. */
+/** Terapeuta ativo e teste ativo (ou os atuais do paciente). */
 function placement(db: Db, user: SessionUser, data: PatientInput, current?: Patient) {
-  const schoolId = user.role === "admin" ? (data.schoolId ?? current?.schoolId) : user.schoolId;
-  const school = db.schools.find((s) => s.id === schoolId);
-  if (!school || (!school.active && school.id !== current?.schoolId)) fail("Escolha uma escola ativa.");
   const therapistId = managesPatients(user) ? (data.therapistId ?? current?.therapistId) : (current?.therapistId ?? user.id);
-  // administrador não é terapeuta: o responsável é sempre um terapeuta ativo da escola
+  // administrador não é terapeuta: o responsável é sempre um terapeuta ativo
   const therapist = db.users.find((u) => u.id === therapistId && u.active && u.role === "terapeuta");
-  if (!therapist || therapist.schoolId !== school.id) fail(`Escolha um terapeuta da escola ${school.name}.`);
+  if (!therapist) fail("Escolha um terapeuta ativo.");
   const testId = data.testId || current?.testId;
-  const test = db.tests.find((t) => t.id === testId && (t.active || t.id === current?.testId));
-  if (!test || !school.testIds.includes(test.id)) fail(`O teste escolhido não é aplicado na escola ${school.name}.`);
-  return { school, therapist, test };
+  const test = db.tests.find((t) => t.id === testId && !t.deletedAt && (t.active || t.id === current?.testId));
+  if (!test) fail("Escolha um teste ativo.");
+  return { therapist, test };
 }
 
 function hasAnswers(db: Db, patientId: string, pred: (f: Db["forms"][number]) => boolean = () => true) {
@@ -61,15 +57,14 @@ export async function createPatient(input: PatientInput) {
     const user = await requireUser({ manager: true });
     const data = clean(input);
     const id = await updateDb((db) => {
-      if (user.role !== "admin" && !user.schoolId) fail("Sua conta não está ligada a uma escola.");
-      const { school, therapist, test } = placement(db, user, data);
+      const { therapist, test } = placement(db, user, data);
       const patient: Patient = {
         id: newId(),
         name: data.name,
         birthDate: data.birthDate,
         email: data.email,
         testId: test.id,
-        schoolId: school.id,
+        schoolId: SCHOOL_ID,
         therapistId: therapist.id,
         guardians: data.guardians.map((g) => ({ id: newId(), kind: g.kind, name: g.name, email: g.email, phone: g.phone, token: newToken() })),
         token: newToken(),
@@ -94,8 +89,7 @@ export async function updatePatient(id: string, input: PatientInput) {
       p.birthDate = data.birthDate;
       p.email = data.email;
 
-      const { school, therapist, test } = placement(db, user, data, p);
-      p.schoolId = school.id;
+      const { therapist, test } = placement(db, user, data, p);
       p.therapistId = therapist.id;
 
       if (test.id !== p.testId) {

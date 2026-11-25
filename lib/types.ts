@@ -89,12 +89,12 @@ export type Test = {
   /** Página pública do teste (/teste/<slug>). */
   landing?: TestLanding;
   /**
-   * Teste excluído: some do painel, das escolas e da landing, mas continua guardado para o histórico
+   * Teste excluído: some do painel e da landing, mas continua guardado para o histórico
    * dos pacientes que o usavam (arquivados na exclusão).
    */
   deletedAt?: string;
-  /** O que a exclusão desfez, para a restauração devolver: escolas que aplicavam o teste, pacientes arquivados e a landing. */
-  deletedFrom?: { schoolIds: string[]; patientIds: string[]; landing?: TestLanding };
+  /** O que a exclusão desfez, para a restauração devolver: pacientes arquivados e a landing. (`schoolIds` vem de quando havia várias escolas.) */
+  deletedFrom?: { schoolIds?: string[]; patientIds: string[]; landing?: TestLanding };
 };
 
 export type TestLanding = {
@@ -114,13 +114,10 @@ export type TestLanding = {
   contactUrl: string;
 };
 
-/** Escola: uma equipe de terapeutas que aplica alguns testes da plataforma aos próprios pacientes. */
+/** A escola da plataforma (só existe uma, a Fora da Caixa: lib/schools.ts). */
 export type School = {
   id: string;
   name: string;
-  /** Testes que a escola pode aplicar. */
-  testIds: string[];
-  active: boolean;
   createdAt: string;
 };
 
@@ -134,7 +131,7 @@ export type User = {
    * terapeuta = responde os testes e analisa os próprios pacientes.
    */
   role: "admin" | "gestor" | "terapeuta";
-  /** Escola do gestor ou do terapeuta. O dono não pertence a escola. */
+  /** Sempre a escola única (lib/schools.ts) para gestor e terapeuta; o dono não pertence a escola. */
   schoolId?: string;
   active: boolean;
   createdAt: string;
@@ -172,7 +169,7 @@ export type Patient = {
   birthDate?: string;
   email?: string;
   testId: string;
-  /** Escola onde o teste é aplicado; o terapeuta é sempre dessa escola. */
+  /** Sempre a escola única (lib/schools.ts). */
   schoolId: string;
   therapistId: string;
   guardians: Guardian[];

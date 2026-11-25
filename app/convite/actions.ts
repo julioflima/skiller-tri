@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { startSession } from "@/lib/auth";
 import { newId, newToken, updateDb } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
+import { SCHOOL_ID } from "@/lib/schools";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,9 +25,6 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
     const email = inv.email || typedEmail;
     if (!EMAIL.test(email)) return { error: "E-mail inválido." };
     if (db.users.some((u) => u.email === email)) return { error: "Já existe uma conta com este e-mail. Entre pela tela inicial." };
-    if (inv.role !== "admin" && !db.schools.some((s) => s.id === inv.schoolId && s.active)) {
-      return { error: "A escola deste convite não está mais ativa. Peça um novo convite a quem convidou você." };
-    }
     const id = newId();
     db.users.push({
       id,
@@ -34,7 +32,7 @@ export async function acceptInvite(_: { error: string }, form: FormData): Promis
       email,
       passwordHash,
       role: inv.role,
-      schoolId: inv.role === "admin" ? undefined : inv.schoolId,
+      schoolId: inv.role === "admin" ? undefined : SCHOOL_ID,
       active: true,
       createdAt: new Date().toISOString(),
       token: newToken(),

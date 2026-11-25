@@ -165,7 +165,7 @@ export async function saveLanding(id: string, input: TestLanding) {
 }
 
 /**
- * Exclui o teste: sai do painel, das escolas e da landing, e os pacientes que o usavam são arquivados.
+ * Exclui o teste: sai do painel e da landing, e os pacientes que o usavam são arquivados.
  * O teste continua guardado (aba Arquivo) para o histórico desses pacientes e para poder ser restaurado.
  * É a segunda confirmação da tela: só passa com a senha.
  */
@@ -178,11 +178,8 @@ export async function deleteTest(id: string, password: string) {
     await updateDb((db) => {
       const t = getTest(db, id);
       const patients = db.patients.filter((p) => p.testId === id && !p.archived);
-      const schools = db.schools.filter((s) => s.testIds.includes(id));
       patients.forEach((p) => (p.archived = true));
-      schools.forEach((s) => (s.testIds = s.testIds.filter((x) => x !== id)));
       t.deletedFrom = {
-        schoolIds: schools.map((s) => s.id),
         patientIds: patients.map((p) => p.id),
         // fora de t.landing, o endereço fica livre para outro teste
         ...(t.landing ? { landing: { ...t.landing, published: false } } : {}),
@@ -195,16 +192,15 @@ export async function deleteTest(id: string, password: string) {
   });
 }
 
-/** Desfaz a exclusão: o teste volta inativo, às escolas e com os pacientes que a exclusão tinha arquivado. */
+/** Desfaz a exclusão: o teste volta inativo e com os pacientes que a exclusão tinha arquivado. */
 export async function restoreTest(id: string) {
   return guard(async () => {
     await admin();
     const notes = await updateDb((db) => {
       const t = db.tests.find((x) => x.id === id && x.deletedAt);
       if (!t) fail("Teste excluído não encontrado.");
-      const from = t.deletedFrom ?? { schoolIds: [], patientIds: [] };
+      const from = t.deletedFrom ?? { patientIds: [] };
       const notes: string[] = [];
-      for (const s of db.schools) if (from.schoolIds.includes(s.id) && !s.testIds.includes(id)) s.testIds.push(id);
       for (const p of db.patients) if (from.patientIds.includes(p.id) && p.testId === id) p.archived = false;
       if (from.landing) {
         if (db.tests.some((x) => x.id !== id && x.landing?.slug === from.landing!.slug)) notes.push("O endereço da landing passou a ser de outro teste: escolha outro.");

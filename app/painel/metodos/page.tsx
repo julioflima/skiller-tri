@@ -19,13 +19,13 @@ const IN_USE: Method[] = [
   {
     name: "Correlação de Spearman e Pearson",
     what: "Se duas habilidades sobem e descem juntas entre os pacientes. Spearman é o padrão por ser mais robusto com poucos dados.",
-    where: "Escola › Análise",
+    where: "Análise",
     data: "5 pessoas por par para aparecer; ~30 para ler com segurança",
   },
   {
     name: "Grupos de perfis (k-means, PCA, silhueta)",
     what: "Separa os pacientes em 2 a 5 grupos com “pegadas” parecidas e projeta num mapa. A silhueta diz se os grupos são de fato distintos.",
-    where: "Escola › Análise",
+    where: "Análise",
     data: "6 pacientes para calcular; ~50 para os grupos significarem algo",
   },
 ];
@@ -38,7 +38,7 @@ export default async function MethodsPage() {
         <h1 style={{ marginBottom: 6 }}>Métodos</h1>
         <p className="muted" style={{ margin: 0 }}>
           Os métodos que o Skiller usa para ler as respostas, onde cada um aparece e quantos dados precisa para ser confiável. Os resultados ficam
-          dentro de cada paciente, escola e teste; esta página só explica.
+          dentro de cada paciente, na Análise e em cada teste; esta página só explica.
         </p>
       </section>
 

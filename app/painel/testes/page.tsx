@@ -54,7 +54,7 @@ export default async function TestsPage({ searchParams }: { searchParams: Promis
                       <td style={{ textAlign: "right" }}>
                         <ActionButton
                           action={restoreTest.bind(null, t.id)}
-                          confirmText={`Restaurar "${t.name}"? Ele volta inativo, às escolas que o aplicavam e com os pacientes que a exclusão arquivou.`}
+                          confirmText={`Restaurar "${t.name}"? Ele volta inativo e com os pacientes que a exclusão arquivou.`}
                         >
                           Restaurar
                         </ActionButton>

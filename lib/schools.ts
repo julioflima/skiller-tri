@@ -1,22 +1,18 @@
-import type { SessionUser } from "./auth";
 import type { Db, Patient } from "./types";
 
 /**
- * Escolas que aparecem no cadastro de paciente, cada uma com os testes que aplica e a equipe.
- * O dono vê as ativas; quem é da escola, só a própria. Num paciente existente, os valores atuais sempre aparecem.
+ * A plataforma tem uma escola só, a Fora da Caixa. O id fica gravado em pessoas, convites e pacientes
+ * (dados de quando havia várias escolas), mas nada mais é filtrado ou escolhido por escola.
  */
-export function schoolOptions(db: Db, user: SessionUser, current?: Patient) {
-  const schools = db.schools.filter((s) =>
-    user.role === "admin" ? s.active || s.id === current?.schoolId : s.id === user.schoolId && (s.active || s.id === current?.schoolId),
-  );
-  return schools.map((s) => ({
-    id: s.id,
-    name: s.name,
-    tests: db.tests
-      .filter((t) => s.testIds.includes(t.id) && (t.active || t.id === current?.testId))
-      .map((t) => ({ id: t.id, name: t.name })),
+export const SCHOOL_ID = "escola-padrao";
+export const SCHOOL_NAME = "Fora da Caixa";
+
+/** Testes e terapeutas para o cadastro de paciente. Num paciente existente, os valores atuais sempre aparecem. */
+export function patientOptions(db: Db, current?: Patient) {
+  return {
+    tests: db.tests.filter((t) => !t.deletedAt && (t.active || t.id === current?.testId)).map((t) => ({ id: t.id, name: t.name })),
     therapists: db.users
-      .filter((u) => u.role === "terapeuta" && u.schoolId === s.id && (u.active || u.id === current?.therapistId))
+      .filter((u) => u.role === "terapeuta" && (u.active || u.id === current?.therapistId))
       .map((u) => ({ id: u.id, name: u.name })),
-  }));
+  };
 }

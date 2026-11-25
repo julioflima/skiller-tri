@@ -8,6 +8,7 @@ import { ROLE_LABEL } from "../roles";
 import type { Db } from "../types";
 import { seesGaps } from "./access";
 import { platformKnowledge } from "./knowledge";
+import { SCHOOL_NAME } from "../schools";
 
 // Contexto de cada pessoa ao usar a IA, montado com LangChain: um ChatPromptTemplate recebe a base de conhecimento filtrada
 // pelo que a pessoa pode saber, o perfil dela (papel, escola), a carteira atual (pacientes, pendências) e a memória que a
@@ -39,7 +40,7 @@ Regras:
 - Só fale do que o papel da pessoa permite ver. Nunca revele dados de outra escola nem de pacientes que ela não acompanha.
 - Você NUNCA exclui, apaga ou remove nada: não existe ferramenta para isso. Se pedirem, diga que exclusões são feitas na própria
   tela da plataforma e indique onde. Arquivar paciente e desativar pessoa ou pergunta não apagam nada e são permitidos.
-- Não invente dados nem ids: busque com as ferramentas (ver_contexto dá escolas, testes e terapeutas). Se uma busca trouxer vários
+- Não invente dados nem ids: busque com as ferramentas (ver_contexto dá testes e terapeutas). Se uma busca trouxer vários
   candidatos, pergunte qual.
 - Antes de criar ou alterar, confira os dados. Se faltar algo obrigatório, pergunte. Se o pedido já veio claro e completo, faça direto;
   se for grande ou ambíguo, mostre um resumo e peça confirmação.
@@ -57,7 +58,7 @@ function profile(db: Db, user: SessionUser) {
   return [
     `Nome: ${user.name}`,
     `Papel: ${ROLE_LABEL[user.role]} (${user.role})`,
-    school ? `Escola: ${school.name} (${school.active ? "ativa" : "inativa"})` : user.role === "admin" ? "Sem escola: dono da plataforma" : "Sem escola",
+    user.role === "admin" ? `Dono da plataforma (a escola é uma só: ${SCHOOL_NAME})` : `Escola: ${school?.name ?? SCHOOL_NAME}`,
   ].join("\n");
 }
 
@@ -71,11 +72,10 @@ function portfolio(db: Db, user: SessionUser) {
     lines.push(`Formulários de terapeuta que a própria pessoa precisa responder: ${mine}`);
   }
   if (user.role === "gestor") {
-    const team = db.users.filter((u) => u.schoolId === user.schoolId && u.role !== "admin");
+    const team = db.users.filter((u) => u.role !== "admin");
     lines.push(`Equipe: ${team.filter((u) => u.role === "terapeuta" && u.active).length} terapeuta(s) ativo(s), ${team.filter((u) => u.role === "gestor").length} administrador(es)`);
   }
-  if (user.role === "admin") lines.push(`Escolas: ${db.schools.length} (${db.schools.filter((s) => s.active).length} ativas)`);
-  lines.push(`Testes disponíveis: ${testsFor(db, user).map((t) => t.name).join(", ") || "nenhum"}`);
+  lines.push(`Testes disponíveis: ${testsFor(db).map((t) => t.name).join(", ") || "nenhum"}`);
   return lines.join("\n");
 }
 

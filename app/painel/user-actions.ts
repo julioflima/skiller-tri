@@ -5,7 +5,7 @@ import { isSchoolRole, ROLE_LABEL, type Role } from "@/lib/roles";
 import { newId, newToken, readDb, updateDb } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { fail, guard } from "@/lib/result";
-import type { Db } from "@/lib/types";
+import { SCHOOL_ID } from "@/lib/schools";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,24 +13,20 @@ function checkPassword(pw: string) {
   if (pw.length < 8) fail("A senha precisa ter pelo menos 8 caracteres.");
 }
 
-/** Terapeuta e administrador da escola precisam de uma escola existente; o dono é da plataforma e fica sem escola. */
-function schoolFor(db: Db, role: Role, schoolId?: string) {
-  if (role === "admin") return undefined;
-  if (!db.schools.some((s) => s.id === schoolId)) fail("Escolha a escola.");
-  return schoolId;
-}
+/** Terapeuta e administrador são da escola (única); o dono é da plataforma e fica sem escola. */
+const schoolFor = (role: Role) => (role === "admin" ? undefined : SCHOOL_ID);
 
 const roleOf = (role: string): Role => (role === "admin" ? "admin" : isSchoolRole(role) ? role : "terapeuta");
 
-/** O administrador da escola só cadastra e edita pessoas da própria escola, e nunca donos. */
-function checkTeamAccess(me: Parameters<typeof canManageTeam>[0], role: Role, schoolId?: string) {
-  if (role === "admin" ? me.role !== "admin" : !canManageTeam(me, schoolId)) fail("Você não pode mexer na equipe desta escola.");
+/** O administrador da escola cadastra e edita a equipe, nunca donos. */
+function checkTeamAccess(me: Parameters<typeof canManageTeam>[0], role: Role) {
+  if (role === "admin" ? me.role !== "admin" : !canManageTeam(me)) fail("Você não pode mexer na equipe.");
 }
 
-export async function createUser(input: { name: string; email: string; password: string; role: Role; schoolId?: string }) {
+export async function createUser(input: { name: string; email: string; password: string; role: Role }) {
   return guard(async () => {
     const me = await requireUser({ manager: true });
-    checkTeamAccess(me, roleOf(input.role), input.schoolId);
+    checkTeamAccess(me, roleOf(input.role));
     const name = input.name.trim();
     const email = input.email.trim().toLowerCase();
     if (!name) fail("Informe o nome.");
@@ -46,7 +42,7 @@ export async function createUser(input: { name: string; email: string; password:
         email,
         passwordHash,
         role,
-        schoolId: schoolFor(db, role, input.schoolId),
+        schoolId: schoolFor(role),
         active: true,
         createdAt: new Date().toISOString(),
         token: newToken(),
@@ -57,7 +53,7 @@ export async function createUser(input: { name: string; email: string; password:
   });
 }
 
-export async function updateUser(id: string, input: { name: string; email: string; role: Role; schoolId?: string; active: boolean }) {
+export async function updateUser(id: string, input: { name: string; email: string; role: Role; active: boolean }) {
   return guard(async () => {
     const me = await requireUser({ manager: true });
     const email = input.email.trim().toLowerCase();
@@ -70,17 +66,13 @@ export async function updateUser(id: string, input: { name: string; email: strin
       const role = roleOf(input.role);
       // dono continua dono; pessoas da escola alternam entre terapeuta e administrador da escola
       if ((u.role === "admin") !== (role === "admin")) fail("O dono é da plataforma: não vira papel de escola, e vice-versa.");
-      checkTeamAccess(me, u.role, u.schoolId);
-      checkTeamAccess(me, role, input.schoolId);
+      checkTeamAccess(me, u.role);
+      checkTeamAccess(me, role);
       if (u.id === me.id && (!input.active || role !== u.role)) fail("Você não pode desativar nem mudar o papel da própria conta.");
-      const schoolId = schoolFor(db, role, input.schoolId);
+      const schoolId = schoolFor(role);
       if (u.role === "terapeuta" && role !== "terapeuta") {
         const n = db.patients.filter((p) => p.therapistId === u.id && !p.archived).length;
         if (n) fail(`${u.name} acompanha ${n} paciente(s). Só terapeuta acompanha paciente: passe-os a outro terapeuta antes.`);
-      }
-      if (schoolId !== u.schoolId) {
-        const n = db.patients.filter((p) => p.therapistId === u.id && p.schoolId === u.schoolId && !p.archived).length;
-        if (n) fail(`${u.name} acompanha ${n} paciente(s) na escola atual. Passe-os a outro terapeuta antes de trocar de escola.`);
       }
       u.name = input.name.trim();
       u.email = email;
@@ -101,7 +93,7 @@ export async function resetUserPassword(id: string, password: string) {
     await updateDb((db) => {
       const u = db.users.find((x) => x.id === id);
       if (!u) fail("Usuário não encontrado.");
-      checkTeamAccess(me, u.role, u.schoolId);
+      checkTeamAccess(me, u.role);
       u.passwordHash = passwordHash;
     });
     return "Senha redefinida.";

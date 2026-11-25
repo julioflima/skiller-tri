@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { canSeePatient, type SessionUser } from "@/lib/auth";
+import { canSeePatient, testsFor, type SessionUser } from "@/lib/auth";
 import { scoreForms } from "@/lib/scoring";
 import { correlationMatrix, dec, impute, kmeans, mean, median, pca2, silhouette, type CorrMethod } from "@/lib/stats";
 import { fmtSeconds } from "@/lib/timing";
 import { SERIES_COLORS, shortName } from "@/app/components/Radar";
-import type { Db, Patient, School } from "@/lib/types";
+import type { Db, Patient } from "@/lib/types";
 import { CorrHeatmap, Scatter, silLabel, Stat, strength } from "./parts";
 
 const SERIES = [
@@ -22,27 +22,25 @@ const STABLE_PROFILES = 50;
 export type AnalysisSearch = { teste?: string; serie?: string; metodo?: string; k?: string };
 
 /**
- * Relações entre habilidades e grupos de perfis dos pacientes de uma escola, num dos testes que ela aplica.
+ * Relações entre habilidades e grupos de perfis dos pacientes, num dos testes da plataforma.
  * O administrador da escola (e o dono) vê todos os pacientes; o terapeuta, só os próprios (canSeePatient).
- * `base` são os parâmetros que a página onde a análise aparece precisa manter nos links (ex.: a aba da escola).
+ * `base` são os parâmetros que a página onde a análise aparece precisa manter nos links.
  */
 export function SchoolAnalysis({
   db,
   user,
-  school,
   sp,
   path,
   base = {},
 }: {
   db: Db;
   user: SessionUser;
-  school: School;
   sp: AnalysisSearch;
   path: string;
   base?: Record<string, string>;
 }) {
-  const patientsOf = (testId: string) => db.patients.filter((p) => p.schoolId === school.id && p.testId === testId && canSeePatient(user, p));
-  const tests = db.tests.filter((t) => school.testIds.includes(t.id) && !t.deletedAt);
+  const patientsOf = (testId: string) => db.patients.filter((p) => p.testId === testId && canSeePatient(user, p));
+  const tests = testsFor(db);
   const answered = tests.filter((t) => {
     const ids = new Set(patientsOf(t.id).map((p) => p.id));
     return db.forms.some((f) => f.testId === t.id && ids.has(f.patientId) && Object.keys(f.answers).length);

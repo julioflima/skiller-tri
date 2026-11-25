@@ -84,7 +84,6 @@ export default async function GapsPage({ searchParams }: { searchParams: Promise
                       {g.userName}
                       <div className="faint">
                         {ROLE_LABEL[g.role as Role] ?? g.role}
-                        {g.schoolName ? ` · ${g.schoolName}` : ""}
                       </div>
                     </td>
                     <td>

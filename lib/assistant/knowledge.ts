@@ -7,42 +7,42 @@ const PRODUTO = `
 # O Skiller
 
 ## A ideia
-- Skiller é uma plataforma de **aprendizado e acompanhamento por meio de testes**. A plataforma cria e revisa os testes; cada **escola**
-  (ou clínica) é uma equipe de terapeutas que escolhe quais testes aplica aos próprios pacientes; paciente e família respondem pelo
+- Skiller é uma plataforma de **aprendizado e acompanhamento por meio de testes**. A plataforma cria e revisa os testes; a escola é uma só,
+  a **Fora da Caixa** (não há várias escolas), com a sua equipe de terapeutas que aplica os testes ativos aos próprios pacientes; paciente e família respondem pelo
   celular, sem senha; o terapeuta acompanha os resultados e a evolução sessão a sessão.
 - É **triagem e acompanhamento, não diagnóstico**. Não substitui avaliação profissional. As faixas dos resultados são descritivas.
 - Avaliação **360**: o mesmo paciente é visto por vários olhares — ele mesmo (sobre si e sobre o outro), cada responsável (mãe/pai)
   e o terapeuta. Funciona para qualquer formação familiar (mãe e pai, duas mães, dois pais, um só responsável).
 - Origem: o primeiro teste, **KAY12 · 12 habilidades fora da caixa**, foi criado com a escola **Fora da Caixa** para triagem das
-  12 habilidades socioemocionais de adolescentes. A plataforma está em fase **piloto**, abrindo espaço para escolas parceiras.
-- Princípios de produto: cada pessoa vê só o que é seu (dados de uma escola nunca aparecem para outra; paciente e família nunca
+  12 habilidades socioemocionais de adolescentes. A plataforma está em fase **piloto**.
+- Princípios de produto: cada pessoa vê só o que é seu (o terapeuta, só os próprios pacientes; paciente e família nunca
   se comparam com outras pessoas nem veem grupos); leve para quem responde, sério para quem analisa; poucas perguntas por encontro;
   reduzir vieses (símbolos nas respostas, sorteio que mistura classificações e varia perguntas, classificação e pesos nunca vão ao
   navegador de quem responde); perguntas sob revisão contínua com dados de qualidade (tempo de resposta).
 
 ## Papéis e o que cada um vê
-- **Dono** (papel interno admin): é da plataforma, não pertence a escola. Cria testes e escolas, convida outros donos, vê os
-  pacientes **dentro de cada escola** (não há lista global), a análise de cada escola e a qualidade dos testes.
+- **Dono** (papel interno admin): é da plataforma. Cria testes, convida outros donos, vê todos os pacientes, a análise, a equipe
+  e a qualidade dos testes.
 - **Administrador da escola** (papel interno gestor): cadastra e edita pacientes, escolhe o terapeuta de cada um, gera os links e
-  cuida da equipe (terapeutas e administradores) da própria escola. Não é terapeuta de paciente. Vê todos os pacientes da escola.
+  cuida da equipe (terapeutas e administradores). Não é terapeuta de paciente. Vê todos os pacientes.
 - **Terapeuta**: responde os testes sobre os próprios pacientes e analisa os próprios pacientes (resultados, sessões, anotações,
-  o próprio link). Não cadastra pacientes nem mexe na equipe. Vê só os próprios pacientes da própria escola.
+  o próprio link). Não cadastra pacientes nem mexe na equipe. Vê só os próprios pacientes.
 - **Paciente e cada responsável**: não têm conta. Cada um recebe um **link pessoal** (/r/<código>) e vê só os próprios formulários.
 - Uma pessoa entra na plataforma por **convite** (link válido por 7 dias; com e-mail, só aquele e-mail pode usar) ou cadastro direto
   pelo administrador da escola (com senha inicial). O dono é sempre dono; pessoas da escola alternam entre terapeuta e administrador.
-  Só terapeuta acompanha paciente: para mudar o papel ou a escola de um terapeuta com pacientes, passe os pacientes a outro antes.
-- Uma escola **inativa** deixa de mostrar os testes aos terapeutas e não aceita novos pacientes.
+  Só terapeuta acompanha paciente: para mudar o papel de um terapeuta com pacientes, passe os pacientes a outro antes.
+- Todos os testes ativos podem ser aplicados; um teste inativo não aceita novos pacientes.
 
 ## Telas do painel (UX)
-Topo: marca Skiller, nome · papel · escola, botão Sair. Abas conforme o papel. O botão **Assistente** (canto inferior direito)
+Topo: marca Skiller, nome · papel, botão Sair. Abas conforme o papel. O botão **Assistente** (canto inferior direito)
 fica em todas as telas do painel.
 
-- **Pacientes** (/painel; administrador da escola e terapeuta): lista com busca por paciente ou responsável, filtro por terapeuta,
+- **Pacientes** (/painel; todos; o terapeuta vê só os próprios): lista com busca por paciente ou responsável, filtro por terapeuta,
   colunas Paciente, Responsáveis, Terapeuta, Teste, Sessões e **Pendências** (formulários aguardando resposta, ou "em dia").
   Botão para novo paciente (administrador). Arquivados ficam fora da lista principal.
-- **Novo paciente / Cadastro** (aba Cadastro do paciente, só administrador e dono): escola (só o dono escolhe), nome completo,
+- **Novo paciente / Cadastro** (aba Cadastro do paciente, só administrador e dono): nome completo,
   data de nascimento e e-mail (opcionais), teste (não pode ser trocado depois das primeiras respostas), terapeuta responsável
-  (sempre um terapeuta ativo da escola) e responsáveis (mãe ou pai, nome, e-mail e telefone opcionais). Ao cadastrar, são criados
+  (sempre um terapeuta ativo) e responsáveis (mãe ou pai, nome, e-mail e telefone opcionais). Ao cadastrar, são criados
   os formulários do **Início do tratamento**; um responsável acrescentado depois ganha o formulário inicial que falta.
 - **Paciente** (/painel/pacientes/<id>), abas:
   - *Acompanhamento*: **Links de resposta** (paciente, cada responsável, terapeuta; copiar ou gerar novo — o novo desativa o anterior;
@@ -55,15 +55,12 @@ fica em todas as telas do painel.
     sessões** (percentual geral de cada pessoa em cada sessão); exportar **CSV** (uma linha por resposta, com tempo de resposta).
     A página é imprimível.
   - Cada formulário aberto mostra pergunta a pergunta, a resposta, o tempo e as trocas.
-- **Análise** (/painel/analise; na escola, para o dono): visões "paciente sobre si", "mãe/pai", "terapeuta" ou "todas as visões
+- **Análise** (/painel/analise; todos): visões "paciente sobre si", "mãe/pai", "terapeuta" ou "todas as visões
   sobre o paciente"; números de pacientes com dados e tempo mediano; **Correlação entre habilidades** (Spearman padrão ou Pearson) e
   relações mais fortes; **Grupos de perfis** (k-means, 2 a 5 grupos, mapa PCA, silhueta). O terapeuta vê só os próprios pacientes.
-- **Equipe** (administrador da escola; para o dono, aba Equipe de cada escola): cadastrar na escola (nome, e-mail, papel, senha inicial
+- **Equipe** (/painel/equipe; administrador da escola e dono): cadastrar (nome, e-mail, papel, senha inicial
   de 8+ caracteres), editar, ativar/desativar, redefinir senha; **Convidar por link** (nome e e-mail opcionais) com convites
   pendentes, validade e "gerar novo link".
-- **Escolas** (dono): lista com testes aplicados, terapeutas, pacientes e situação; criar escola. Dentro de cada escola: abas
-  Pacientes, Análise, Equipe e **Dados e testes** (nome, ativa/inativa, testes aplicados; um teste em uso por pacientes da escola
-  não pode ser retirado).
 - **Testes** (dono): lista com perguntas, classificações, etapas, pacientes, situação; criar teste (em branco, modelo 12 habilidades
   ou duplicar um existente); testes excluídos ficam no arquivo e podem ser restaurados. Dentro de um teste, abas:
   - *✦ Assistente IA*: chat que edita só aquele teste (cita itens com @ pergunta, # classificação, $ escala, ! etapa).
@@ -86,7 +83,7 @@ fica em todas as telas do painel.
   seus pacientes); para o dono, a aba **Donos** (convite de donos).
 
 ## Fora do painel
-- **/** página inicial da plataforma: como funciona, testes publicados, quem vê o quê, contato para escolas.
+- **/** página inicial da plataforma: como funciona, testes publicados, quem vê o quê, contato.
 - **/teste/<endereço>** landing de cada teste (ex.: /teste/kay12), com identidade visual própria do teste.
 - **/entrar** login com e-mail e senha (a sessão se renova a cada uso e só expira depois de 30 dias sem entrar). **/convite/<código>** criar a conta a partir do convite.
 - **/r/<código>** página pessoal de respostas: "Para responder" e "Já enviados". No questionário, a pessoa toca no **símbolo** da
@@ -126,8 +123,8 @@ descrições) pode ter mudado: consulte com ver_teste.
 - **Tempo de resposta** (Teste › Qualidade; algumas dezenas de respostas por pergunta): mediana do tempo com a aba visível até a
   escolha, somando revisões, e parcela de respostas rápidas demais (menos de 1,5 s). Aponta perguntas confusas ou não lidas.
 - **Correlação** de Spearman (padrão, por postos, mais robusta com poucos dados) ou Pearson (linear) entre habilidades, uma
-  observação por paciente na visão escolhida (Escola › Análise; aparece com 5 pessoas por par; ~30 para ler com segurança).
-- **Grupos de perfis** (Escola › Análise): k-means de 2 a 5 grupos sobre os percentuais, com mapa em PCA e silhueta (diz se os
+  observação por paciente na visão escolhida (Análise; aparece com 5 pessoas por par; ~30 para ler com segurança).
+- **Grupos de perfis** (Análise): k-means de 2 a 5 grupos sobre os percentuais, com mapa em PCA e silhueta (diz se os
   grupos são de fato distintos). Calcula com 6 pacientes com metade das habilidades respondidas; ~50 para os grupos significarem
   algo. Só a equipe vê.
 - **Cobertura mínima**: menos de 3 perguntas ativas por classificação e público usado = medida sem validade estatística.
@@ -151,7 +148,7 @@ const ARQUITETURA = `
   faixas), lib/stats.ts (correlação, k-means, PCA, silhueta), lib/symbols.ts, lib/landing-files.ts, app/r (questionário),
   app/painel (painel) e lib/assistant/ (este assistente: ferramentas, conhecimento, contexto por pessoa e skills).
 - IA: Claude via ANTHROPIC_API_KEY. O assistente da plataforma roda no LangChain (@langchain/anthropic): Sonnet com as ferramentas
-  ligadas às mesmas Server Actions das telas, contexto montado por pessoa (papel, escola, carteira e memória) e skills em segundo
+  ligadas às mesmas Server Actions das telas, contexto montado por pessoa (papel, carteira e memória) e skills em segundo
   plano com Haiku (memória da pessoa). O assistente de cada teste usa o SDK da Anthropic direto.
   Tabelas: AssistantConversation, AssistantGap e AssistantMemory.
 - Pedidos de mudança de código, layout ou nova funcionalidade não são feitos por você: explique que viram trabalho de
@@ -162,7 +159,7 @@ const ARQUITETURA = `
 const LACUNAS = `
 # Lacunas (só para você)
 - Aba **Lacunas** em Configurações (/painel/configuracoes/lacunas): log do que o assistente não soube responder ou fazer em todas as conversas da plataforma, com
-  quem pediu (papel e escola), tipo, tema e motivo; temas mais pedidos; marcar como resolvida (com nota), ignorada ou reabrir.
+  quem pediu (papel), tipo, tema e motivo; temas mais pedidos; marcar como resolvida (com nota), ignorada ou reabrir.
 - Quem anota é uma skill separada (lib/assistant/skills/registrar-falha.ts) que lê cada resposta depois de enviada; o assistente da
   conversa não anota nem comenta isso.
 `;

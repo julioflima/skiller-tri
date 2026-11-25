@@ -8,39 +8,31 @@ import type { GuardianKind } from "@/lib/types";
 import { createPatient, updatePatient, type GuardianInput, type PatientInput } from "../patient-actions";
 
 type Option = { id: string; name: string };
-/** Escola com os testes que aplica e os terapeutas da equipe. O terapeuta recebe só a própria. */
-export type SchoolOption = Option & { tests: Option[]; therapists: Option[] };
+/** Testes que podem ser aplicados e terapeutas da equipe (lib/schools.ts → patientOptions). */
+export type PatientOptions = { tests: Option[]; therapists: Option[] };
 
 export function PatientForm({
   patientId,
   initial,
-  schools,
-  isAdmin,
-  picksTherapist = isAdmin,
+  options,
+  picksTherapist,
   testLocked,
-  defaultSchoolId,
 }: {
   patientId?: string;
   initial?: PatientInput;
-  schools: SchoolOption[];
-  isAdmin: boolean;
-  /** Mostra a escolha do terapeuta (administrador e visão de escola). */
+  options: PatientOptions;
+  /** Mostra a escolha do terapeuta. */
   picksTherapist?: boolean;
   testLocked?: boolean;
-  /** Escola já escolhida (ex.: veio da página da escola). Sem ela, o admin precisa escolher antes de tudo. */
-  defaultSchoolId?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
-  // o terapeuta só tem a própria escola; o admin escolhe explicitamente onde o paciente será aplicado
-  const start0 = isAdmin ? schools.find((s) => s.id === defaultSchoolId) : schools[0];
   const [data, setData] = useState<PatientInput>(
     initial ?? {
       name: "",
-      schoolId: start0?.id,
-      testId: start0?.tests[0]?.id ?? "",
-      therapistId: start0?.therapists[0]?.id,
+      testId: options.tests[0]?.id ?? "",
+      therapistId: options.therapists[0]?.id,
       guardians: [
         { kind: "mae", name: "" },
         { kind: "pai", name: "" },
@@ -48,20 +40,7 @@ export function PatientForm({
     },
   );
   const set = (patch: Partial<PatientInput>) => setData((d) => ({ ...d, ...patch }));
-  const school = schools.find((s) => s.id === data.schoolId);
-  const noSchool = !school;
-  const tests = school?.tests ?? [];
-  const therapists = school?.therapists ?? [];
-  // ao trocar de escola, mantém teste e terapeuta só se a nova escola também os tiver
-  const pickSchool = (id: string) => {
-    const next = schools.find((s) => s.id === id);
-    if (!next) return;
-    set({
-      schoolId: id,
-      testId: testLocked || next.tests.some((t) => t.id === data.testId) ? data.testId : (next.tests[0]?.id ?? ""),
-      therapistId: next.therapists.some((t) => t.id === data.therapistId) ? data.therapistId : next.therapists[0]?.id,
-    });
-  };
+  const { tests, therapists } = options;
   const setGuardian = (i: number, patch: Partial<GuardianInput>) =>
     set({
       guardians: data.guardians.map((g, j) => (j === i ? { ...g, ...patch } : g)),
@@ -86,40 +65,7 @@ export function PatientForm({
   return (
     <form className="stack" onSubmit={submit}>
       {toast.node}
-      {isAdmin && (
-        <section className="card">
-          <h2>Escola</h2>
-          <p className="muted small">Paciente, responsáveis e terapeuta pertencem a uma escola. Escolha em qual escola o teste será aplicado.</p>
-          <select
-            id="p-school"
-            aria-label="Escola"
-            value={school?.id ?? ""}
-            onChange={(e) => pickSchool(e.target.value)}
-            required
-            style={{ maxWidth: 360 }}
-          >
-            <option value="" disabled>
-              Escolha a escola…
-            </option>
-            {schools.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </section>
-      )}
-      <fieldset
-        disabled={noSchool}
-        className="stack"
-        style={{
-          border: 0,
-          padding: 0,
-          margin: 0,
-          minWidth: 0,
-          opacity: noSchool ? 0.55 : 1,
-        }}
-      >
+      <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <section className="card">
           <h2>Paciente</h2>
           <div className="grid-2" style={{ gap: 14 }}>
@@ -223,7 +169,7 @@ export function PatientForm({
       </fieldset>
 
       <div className="row">
-        <button className="btn lg" disabled={pending || noSchool}>
+        <button className="btn lg" disabled={pending}>
           {pending ? "Salvando…" : patientId ? "Salvar alterações" : "Cadastrar paciente"}
         </button>
       </div>

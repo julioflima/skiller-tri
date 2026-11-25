@@ -5,10 +5,10 @@ import type { Form, Test } from "@/lib/types";
 import { Stat } from "../../analise/parts";
 
 /**
- * Qualidade do instrumento: tempo de resposta por pergunta. Junta as aplicações de todas as escolas,
+ * Qualidade do instrumento: tempo de resposta por pergunta. Junta todas as aplicações do teste,
  * porque a pergunta é a mesma em qualquer uma delas; só aparecem números agregados por pergunta, nunca pacientes.
  */
-export function Quality({ test, forms, schools }: { test: Test; forms: Form[]; schools: number }) {
+export function Quality({ test, forms }: { test: Test; forms: Form[] }) {
   const categories = [...test.categories].sort((a, b) => a.order - b.order);
   const qById = new Map(test.questions.map((q) => [q.id, q]));
   const catName = new Map(categories.map((c) => [c.id, c.name]));
@@ -30,13 +30,13 @@ export function Quality({ test, forms, schools }: { test: Test; forms: Form[]; s
   return (
     <div className="stack">
       <p className="muted" style={{ margin: 0 }}>
-        Se as perguntas estão medindo bem, com as aplicações de todas as escolas juntas. A explicação de cada método está em{" "}
+        Se as perguntas estão medindo bem, com todas as aplicações juntas. A explicação de cada método está em{" "}
         <Link href="/painel/metodos">Métodos</Link>.
       </p>
 
       <div className="grid-3">
         <Stat label="Formulários com respostas" value={answered.length} hint={`${answered.filter((f) => f.finishedAt).length} concluídos`} />
-        <Stat label="Pacientes" value={new Set(answered.map((f) => f.patientId)).size} hint={`em ${schools} escola(s)`} />
+        <Stat label="Pacientes" value={new Set(answered.map((f) => f.patientId)).size} hint="com alguma resposta" />
         <Stat label="Respostas" value={answered.reduce((a, f) => a + Object.keys(f.answers).length, 0)} hint="somando todas as visões" />
       </div>
 

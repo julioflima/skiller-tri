@@ -1,6 +1,7 @@
 import { readDb } from "@/lib/db";
 import { AcceptInviteForm } from "./AcceptInviteForm";
 import { BrandMark } from "@/app/components/BrandMark";
+import { SCHOOL_NAME } from "@/lib/schools";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               email={invite.email}
               name={invite.name}
               role={invite.role}
-              school={db.schools.find((s) => s.id === invite.schoolId)?.name}
+              school={SCHOOL_NAME}
             />
           ) : (
             <>

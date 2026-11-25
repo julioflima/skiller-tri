@@ -18,16 +18,16 @@ import {
 
 const SUGGESTIONS: Record<string, { label: string; text: string }[]> = {
   admin: [
-    { label: "Escolas", text: "Quais escolas estão ativas e quais testes cada uma aplica?" },
+    { label: "Pendências", text: "Quais pacientes ainda não responderam o início do tratamento?" },
     { label: "Cobertura do teste", text: "Quais classificações do KAY12 têm poucas perguntas ativas?" },
-    { label: "Convidar", text: "Crie um convite de administrador para a escola " },
+    { label: "Convidar", text: "Crie um convite de terapeuta para " },
     { label: "Como funciona", text: "Como funciona o sorteio das perguntas?" },
   ],
   gestor: [
     { label: "Pendências", text: "Quais pacientes ainda não responderam o início do tratamento?" },
     { label: "Novo paciente", text: "Cadastre o paciente " },
     { label: "Equipe", text: "Quem está na minha equipe?" },
-    { label: "Como funciona", text: "Como leio a análise da escola?" },
+    { label: "Como funciona", text: "Como leio a análise?" },
   ],
   terapeuta: [
     { label: "Meus pacientes", text: "Como estão os meus pacientes?" },

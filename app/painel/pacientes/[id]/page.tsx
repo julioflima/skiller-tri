@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canSeePatient, managesPatients, requirePageUser } from "@/lib/auth";
-import { schoolOptions } from "@/lib/schools";
+import { patientOptions } from "@/lib/schools";
 import { readDb } from "@/lib/db";
 import { ABOUT_LABEL, formProgress, GUARDIAN_LABEL, respondentName } from "@/lib/forms";
 import type { Form } from "@/lib/types";
@@ -47,9 +47,8 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="stack">
-      {/* o administrador volta aos pacientes da escola do paciente */}
-      <Link href={user.role === "admin" ? `/painel/escolas/${p.schoolId}?aba=pacientes` : "/painel"} className="faint no-print">
-        ← {user.role === "admin" ? `Pacientes da ${db.schools.find((s) => s.id === p.schoolId)?.name ?? "escola"}` : "Pacientes"}
+      <Link href="/painel" className="faint no-print">
+        ← Pacientes
       </Link>
       <section>
         <div className="row spread">
@@ -58,7 +57,7 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
           {years !== null && `${years} anos · `}
-          {p.guardians.length > 0 && `responsáveis: ${p.guardians.map((g) => g.name).join(", ")} · `}{user.role === "admin" && `${db.schools.find((s) => s.id === p.schoolId)?.name ?? "sem escola"} · `}terapeuta {therapist?.name ?? "—"} ·{" "}
+          {p.guardians.length > 0 && `responsáveis: ${p.guardians.map((g) => g.name).join(", ")} · `}terapeuta {therapist?.name ?? "—"} ·{" "}
           {test?.name ?? "teste removido"}
         </p>
       </section>
@@ -86,12 +85,10 @@ export default async function PatientPage({ params, searchParams }: { params: Pr
               birthDate: p.birthDate,
               email: p.email,
               testId: p.testId,
-              schoolId: p.schoolId,
               therapistId: p.therapistId,
               guardians: p.guardians.map((g) => ({ id: g.id, kind: g.kind, name: g.name, email: g.email, phone: g.phone })),
             }}
-            schools={schoolOptions(db, user, p)}
-            isAdmin={user.role === "admin"}
+            options={patientOptions(db, p)}
             picksTherapist
             testLocked={forms.some((f) => Object.keys(f.answers).length > 0)}
           />

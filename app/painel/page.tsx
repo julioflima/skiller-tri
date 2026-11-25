@@ -1,30 +1,26 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { canSeePatient, managesPatients, requirePageUser } from "@/lib/auth";
 import { readDb } from "@/lib/db";
+import { SCHOOL_NAME } from "@/lib/schools";
 
-/** Pacientes da escola do usuário. O administrador não tem lista global: vê os pacientes dentro de cada escola. */
+/** Pacientes: o dono e o administrador da escola veem todos; o terapeuta, os próprios. */
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; terapeuta?: string; arquivados?: string }> }) {
   const user = await requirePageUser();
-  if (user.role === "admin") redirect("/painel/escolas");
   const { q = "", terapeuta = "", arquivados = "" } = await searchParams;
   const db = await readDb();
   const users = new Map(db.users.map((u) => [u.id, u]));
   const tests = new Map(db.tests.map((t) => [t.id, t]));
   const wholeSchool = managesPatients(user); // administrador da escola: vê todos os pacientes e terapeutas
   const term = q.trim().toLowerCase();
-  const school = db.schools.find((s) => s.id === user.schoolId);
-  const escola = school?.id ?? "";
 
   const list = db.patients
     .filter((p) => canSeePatient(user, p))
     .filter((p) => (arquivados ? p.archived : !p.archived))
-    .filter((p) => p.schoolId === escola)
     .filter((p) => !terapeuta || p.therapistId === terapeuta)
     .filter((p) => !term || p.name.toLowerCase().includes(term) || p.guardians.some((g) => g.name.toLowerCase().includes(term)))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
-  const therapists = db.users.filter((u) => u.active && u.role === "terapeuta" && u.schoolId === escola);
+  const therapists = db.users.filter((u) => u.active && u.role === "terapeuta");
   // administrador não é terapeuta: paciente ainda ligado a um admin (cadastro antigo) aparece como pendente de terapeuta
   const therapistName = (id: string) => {
     const t = users.get(id);
@@ -36,7 +32,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       <div className="row spread">
         <div>
           <h1 style={{ margin: 0 }}>Pacientes</h1>
-          <p className="muted" style={{ margin: 0 }}>{!school ? "Sua conta não está ligada a uma escola." : wholeSchool ? `Todos os pacientes da ${school.name}` : `Seus pacientes na ${school.name}`}</p>
+          <p className="muted" style={{ margin: 0 }}>{wholeSchool ? `Todos os pacientes da ${SCHOOL_NAME}` : "Seus pacientes"}</p>
         </div>
         {wholeSchool && (
           <Link href="/painel/pacientes/novo" className="btn warm">

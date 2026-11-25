@@ -565,7 +565,7 @@ export function ArchiveTestSection({ testId, name, patients, forms }: { testId: 
       {toast.node}
       <h2 style={{ margin: 0 }}>Arquivar teste</h2>
       <p className="muted" style={{ margin: 0 }}>
-        O teste sai do painel, das escolas e da landing, e os pacientes que o usam são arquivados com o histórico guardado. Dá para restaurar
+        O teste sai do painel e da landing, e os pacientes que o usam são arquivados com o histórico guardado. Dá para restaurar
         depois na aba Arquivo da lista de testes.
       </p>
       <div>
@@ -578,7 +578,7 @@ export function ArchiveTestSection({ testId, name, patients, forms }: { testId: 
           <>
             <h3 style={{ margin: 0 }}>Arquivar &quot;{name}&quot;?</h3>
             <p style={{ margin: 0 }}>
-              O teste sai do painel, das escolas e da landing.{" "}
+              O teste sai do painel e da landing.{" "}
               {patients > 0 &&
                 `${patients} paciente${patients > 1 ? "s" : ""} que o usa${patients > 1 ? "m" : ""} ser${patients > 1 ? "ão" : "á"} arquivado${patients > 1 ? "s" : ""}, com ${forms} formulário${forms === 1 ? "" : "s"} e as respostas guardados no histórico. `}
               Dá para restaurar depois na aba Arquivo da lista de testes.
@@ -716,7 +716,7 @@ export function LandingEditor({ testId, landing, suggestedSlug }: { testId: stri
     <section className="card stack">
       {toast.node}
       <p className="muted small" style={{ margin: 0 }}>
-        Página pública do teste, para apresentá-lo a escolas e famílias. As classificações, quem responde e as etapas saem do próprio teste. Os
+        Página pública do teste, para apresentá-lo às famílias. As classificações, quem responde e as etapas saem do próprio teste. Os
         testes publicados também aparecem na página inicial da plataforma.
       </p>
       <div className="grid-2" style={{ gap: 14 }}>

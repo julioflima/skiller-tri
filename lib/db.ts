@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import seed from "./seed.json";
 import { hashPassword } from "./password";
 import type { Db, Test, TestLanding, User } from "./types";
+import { SCHOOL_ID, SCHOOL_NAME } from "./schools";
 
 const DATA_FILE = process.env.DATA_FILE || path.join(process.cwd(), "data", "db.json");
 
@@ -158,10 +159,7 @@ function checkVersion(db: Db) {
   return migrate(db);
 }
 
-// --- Escolas e landing dos testes (dados anteriores a elas) ----------------------------------
-
-/** Id fixo: a migração roda a cada leitura até ser gravada, e precisa dar sempre o mesmo resultado. */
-export const DEFAULT_SCHOOL_ID = "escola-padrao";
+// --- Escola única e landing dos testes (dados anteriores a elas) ---------------------------
 
 /** Conteúdo da antiga página inicial, que passou a ser a landing do teste das 12 habilidades. */
 const KAY12_LANDING: TestLanding = {
@@ -180,25 +178,16 @@ const KAY12_LANDING: TestLanding = {
 };
 
 /**
- * Coloca na escola padrão (com todos os testes) os terapeutas e pacientes cadastrados antes das escolas,
- * e dá ao teste das 12 habilidades a landing que antes era a página inicial. Só acrescenta campos.
+ * Deixa só a escola Fora da Caixa (a plataforma tem uma escola só) e coloca nela todas as pessoas que não são donas,
+ * os convites e os pacientes. Dá ao teste das 12 habilidades a landing que antes era a página inicial.
  */
 function migrate(db: Db) {
-  db.schools ??= [];
   db.invites ??= [];
-  const orphans = db.users.some((u) => u.role === "terapeuta" && !u.schoolId) || db.patients.some((p) => !p.schoolId);
-  if (orphans && !db.schools.some((s) => s.id === DEFAULT_SCHOOL_ID)) {
-    db.schools.push({
-      id: DEFAULT_SCHOOL_ID,
-      name: "Fora da Caixa",
-      testIds: db.tests.map((t) => t.id),
-      active: true,
-      createdAt: "2026-10-14T00:00:00.000Z",
-    });
-  }
-  for (const u of db.users) if (u.role === "terapeuta" && !u.schoolId) u.schoolId = DEFAULT_SCHOOL_ID;
-  const schoolOf = new Map(db.users.map((u) => [u.id, u.schoolId]));
-  for (const p of db.patients) p.schoolId ??= schoolOf.get(p.therapistId) ?? DEFAULT_SCHOOL_ID;
+  const school = db.schools?.find((s) => s.id === SCHOOL_ID);
+  db.schools = [school ? { id: school.id, name: school.name, createdAt: school.createdAt } : { id: SCHOOL_ID, name: SCHOOL_NAME, createdAt: "2026-10-14T00:00:00.000Z" }];
+  for (const u of db.users) if (u.role !== "admin") u.schoolId = SCHOOL_ID;
+  for (const i of db.invites) if (i.role !== "admin") i.schoolId = SCHOOL_ID;
+  for (const p of db.patients) p.schoolId = SCHOOL_ID;
   if (!db.tests.some((t) => t.landing?.slug === KAY12_LANDING.slug)) {
     const kay = db.tests.find((t) => !t.landing && t.name === "12 habilidades fora da caixa");
     if (kay) kay.landing = { ...KAY12_LANDING };

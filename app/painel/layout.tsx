@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { requirePageUser } from "@/lib/auth";
-import { readDb } from "@/lib/db";
 import { ROLE_LABEL } from "@/lib/roles";
 import { logout } from "@/app/auth-actions";
 import { NavLinks } from "./NavLinks";
@@ -11,18 +10,12 @@ export const dynamic = "force-dynamic";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePageUser();
-  const db = await readDb();
-  const school = user.schoolId ? db.schools.find((s) => s.id === user.schoolId) : undefined;
-  // dono: plataforma (pacientes e análise ficam dentro de cada escola); administrador da escola: pacientes, análise e equipe;
-  // terapeuta: pacientes e análise. Métodos explica os métodos para todos, sem dados.
+  // todos: pacientes e análise (o terapeuta só dos próprios pacientes); dono e administrador da escola: equipe;
+  // dono: testes. Métodos explica os métodos para todos, sem dados.
   const links = [
-    ...(user.role === "admin"
-      ? [{ href: "/painel/escolas", label: "Escolas" }]
-      : [
-          { href: "/painel", label: "Pacientes" },
-          { href: "/painel/analise", label: "Análise" },
-        ]),
-    ...(user.role === "gestor" ? [{ href: "/painel/equipe", label: "Equipe" }] : []),
+    { href: "/painel", label: "Pacientes" },
+    { href: "/painel/analise", label: "Análise" },
+    ...(user.role !== "terapeuta" ? [{ href: "/painel/equipe", label: "Equipe" }] : []),
     ...(user.role === "admin" ? [{ href: "/painel/testes", label: "Testes" }] : []),
     { href: "/painel/metodos", label: "Métodos" },
     // minha conta e, para o dono, os donos da plataforma
@@ -39,7 +32,6 @@ export default async function PainelLayout({ children }: { children: React.React
         <div className="row">
           <span className="faint">
             {user.name} · {ROLE_LABEL[user.role]}
-            {school ? ` · ${school.name}` : ""}
           </span>
           <form action={logout}>
             <button className="btn ghost sm">Sair</button>

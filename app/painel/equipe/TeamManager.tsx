@@ -7,8 +7,7 @@ import type { Result } from "@/lib/result";
 import { ROLE_LABEL, type Role, type SchoolRole } from "@/lib/roles";
 import { createUser, resetUserPassword, updateUser } from "../user-actions";
 
-export type Member = { id: string; name: string; email: string; role: Role; schoolId?: string; school?: string; active: boolean; patients: number };
-type SchoolOption = { id: string; name: string };
+export type Member = { id: string; name: string; email: string; role: Role; active: boolean; patients: number };
 
 /** Papel dentro da escola: terapeuta (responde e analisa) ou administrador da escola (pacientes, equipe, links). */
 export function SchoolRoleSelect({ value, onChange, disabled }: { value: SchoolRole; onChange: (role: SchoolRole) => void; disabled?: boolean }) {
@@ -36,9 +35,9 @@ function useRunner() {
 }
 
 /** Cadastra direto uma pessoa da escola (terapeuta ou administrador da escola). */
-export function NewMemberForm({ school }: { school: SchoolOption }) {
+export function NewMemberForm() {
   const { run, pending, toast } = useRunner();
-  const empty = { name: "", email: "", password: "", role: "terapeuta" as SchoolRole, schoolId: school.id };
+  const empty = { name: "", email: "", password: "", role: "terapeuta" as SchoolRole };
   const [f, setF] = useState(empty);
   return (
     <section className="card">
@@ -75,37 +74,24 @@ export function NewMemberForm({ school }: { school: SchoolOption }) {
   );
 }
 
-/**
- * `schools`: para onde o dono pode mover a pessoa (vazio = não troca de escola).
- */
-export function MembersTable({
-  members,
-  meId,
-  schools = [],
-  title = "Equipe",
-}: {
-  members: Member[];
-  meId: string;
-  schools?: SchoolOption[];
-  title?: string;
-}) {
+export function MembersTable({ members, meId, title = "Equipe" }: { members: Member[]; meId: string; title?: string }) {
   return (
     <section className="card">
       <h2>{title}</h2>
       {members.length === 0 && <p className="muted" style={{ margin: 0 }}>Ninguém cadastrado ainda.</p>}
       <div className="stack">
         {members.map((m) => (
-          <MemberRow key={m.id} m={m} isMe={m.id === meId} schools={schools} />
+          <MemberRow key={m.id} m={m} isMe={m.id === meId} />
         ))}
       </div>
     </section>
   );
 }
 
-function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: SchoolOption[] }) {
+function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   const { run, pending, toast } = useRunner();
   const [editing, setEditing] = useState(false);
-  const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, schoolId: m.schoolId, active: m.active });
+  const [f, setF] = useState({ name: m.name, email: m.email, role: m.role, active: m.active });
   const [pw, setPw] = useState("");
   const inSchool = m.role !== "admin";
 
@@ -118,15 +104,6 @@ function MemberRow({ m, isMe, schools }: { m: Member; isMe: boolean; schools: Sc
             <input type="text" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={{ flex: 2, minWidth: 160 }} aria-label="Nome" />
             <input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} style={{ flex: 2, minWidth: 180 }} aria-label="E-mail" />
             {inSchool && <SchoolRoleSelect value={f.role as SchoolRole} onChange={(role) => setF({ ...f, role })} disabled={isMe} />}
-            {inSchool && schools.length > 1 && (
-              <select value={f.schoolId ?? ""} onChange={(e) => setF({ ...f, schoolId: e.target.value })} aria-label="Escola" style={{ flex: 1.5, minWidth: 160 }}>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            )}
             <label className="small" style={{ fontWeight: 400, margin: 0 }}>
               <input type="checkbox" checked={f.active} disabled={isMe} onChange={(e) => setF({ ...f, active: e.target.checked })} /> ativa
             </label>

@@ -113,7 +113,6 @@ export default async function TestPage({ params, searchParams }: { params: Promi
         <Quality
           test={test}
           forms={db.forms.filter((f) => f.testId === test.id)}
-          schools={new Set(db.patients.filter((p) => p.testId === test.id).map((p) => p.schoolId)).size}
         />
       ) : aba === "dados" ? (
         <>

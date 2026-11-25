@@ -86,25 +86,18 @@ export function managesPatients(user: SessionUser) {
   return user.role === "admin" || user.role === "gestor";
 }
 
-/** Mexe na equipe de `schoolId` (sem escola = donos): o dono em qualquer uma; o administrador da escola só na própria. */
-export function canManageTeam(user: SessionUser, schoolId?: string) {
-  if (user.role === "admin") return true;
-  return user.role === "gestor" && !!schoolId && user.schoolId === schoolId;
+/** Mexe na equipe (terapeutas e administradores da escola): o dono e o administrador da escola. Donos, só o dono. */
+export function canManageTeam(user: SessionUser) {
+  return user.role === "admin" || user.role === "gestor";
 }
 
-/**
- * O dono vê tudo; o administrador da escola, todos os pacientes da escola. O terapeuta não acessa a plataforma:
- * só os testes aplicados na sua escola pelos seus pacientes.
- */
-export function canSeePatient(user: SessionUser, patient: { therapistId: string; schoolId: string }) {
-  if (user.role === "admin") return true;
-  if (user.role === "gestor") return !!user.schoolId && patient.schoolId === user.schoolId;
-  return patient.therapistId === user.id && !!user.schoolId && patient.schoolId === user.schoolId;
+/** O dono e o administrador da escola veem todos os pacientes; o terapeuta, só os próprios. */
+export function canSeePatient(user: SessionUser, patient: { therapistId: string }) {
+  if (user.role === "admin" || user.role === "gestor") return true;
+  return patient.therapistId === user.id;
 }
 
-/** Testes que o usuário pode aplicar: todos para o dono; os da escola (ativa) para quem é da escola. */
-export function testsFor(db: Db, user: SessionUser) {
-  if (user.role === "admin") return db.tests.filter((t) => !t.deletedAt);
-  const school = db.schools.find((s) => s.id === user.schoolId && s.active);
-  return school ? db.tests.filter((t) => school.testIds.includes(t.id)) : [];
+/** Testes que podem ser aplicados: todos os que não foram excluídos. */
+export function testsFor(db: Db) {
+  return db.tests.filter((t) => !t.deletedAt);
 }
