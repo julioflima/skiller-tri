@@ -26,7 +26,7 @@ const Verdict = z.object({
   pedido: z.string().describe("O que a pessoa pediu, nas palavras dela (curto)"),
   tipo: z.enum(Object.keys(GAP_KINDS) as [GapKind, ...GapKind[]]),
   tema: z.string().describe("Tema curto, ex.: relatório em PDF, empatia, agenda de sessões"),
-  motivo: z.string().describe("Por que não deu, em uma frase"),
+  motivo: z.string().optional().describe("Por que não deu, em uma frase"),
 });
 
 const PROMPT = ChatPromptTemplate.fromMessages([
@@ -62,7 +62,7 @@ export async function registrarFalha({ user, school, conversationId, question, a
       question: (v.pedido || question).slice(0, 2000),
       kind: v.tipo,
       topic: v.tema.slice(0, 200),
-      reason: v.motivo.slice(0, 1000),
+      reason: (v.motivo || "Motivo não informado.").slice(0, 1000),
     },
   });
 }

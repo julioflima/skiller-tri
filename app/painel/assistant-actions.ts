@@ -49,10 +49,18 @@ const textOf = (m: BaseMessage) =>
         .filter(Boolean)
         .join("\n\n");
 
-/** Parte do histórico que vai ao modelo: começa numa mensagem da pessoa e encurta resultados antigos de ferramentas. */
-function window(history: BaseMessage[]): BaseMessage[] {
+/** Onde começa a janela do histórico: numa mensagem da pessoa, até HISTORY mensagens atrás. */
+function windowStart(history: BaseMessage[]): number {
   let start = Math.max(0, history.length - HISTORY);
   while (start < history.length && !HumanMessage.isInstance(history[start])) start++;
+  return start;
+}
+
+/**
+ * Parte do histórico que vai ao modelo: a partir de `start` (fixo durante uma mensagem, porque o raciocínio dos passos
+ * desta rodada fica preso ao começo da conversa que ele viu) e com resultados antigos de ferramentas encurtados.
+ */
+function window(history: BaseMessage[], start: number): BaseMessage[] {
   const slice = history.slice(start);
   let lastHuman = slice.length - 1;
   while (lastHuman > 0 && !HumanMessage.isInstance(slice[lastHuman])) lastHuman--;
@@ -165,6 +173,7 @@ export async function sendAssistantMessage(conversationId: string | null, text: 
       await prisma.assistantConversation.update({ where: { id: convId }, data: { messages: stored } });
     };
     await push(new HumanMessage(said));
+    const start = windowStart(history);
 
     const { system, school } = await userContext(user);
     const ctx = { user, origin: await origin() };
@@ -175,7 +184,7 @@ export async function sendAssistantMessage(conversationId: string | null, text: 
     for (let step = 0; step < MAX_STEPS && !finished; step++) {
       let reply: AIMessage;
       try {
-        reply = (await llm.invoke([system, ...window(history)])) as AIMessage;
+        reply = (await llm.invoke([system, ...window(history, start)])) as AIMessage;
       } catch (e) {
         console.error("assistant", e);
         fail(aiErrorMessage(e));
