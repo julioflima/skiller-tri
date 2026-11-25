@@ -702,6 +702,7 @@ thead .wm-q, tfoot .wm-q { font-size: 0.8rem; font-weight: 600; color: var(--ink
 .cl-compose__box:focus-within { border-color: #d6d2c6; box-shadow: 0 4px 24px rgba(31,30,29,.09); }
 .cl-compose textarea { width: 100%; min-height: 24px; max-height: 240px; padding: 2px 0; background: transparent; border: 0; outline: 0; resize: none; font-size: 15px !important; line-height: 1.5; }
 .cl-compose.is-large textarea { min-height: 52px; }
+.cl-compose textarea:focus, .cl-compose textarea:focus-visible { border-color: transparent; box-shadow: none; outline: none; }
 .cl-compose__actions { display: flex; align-items: center; justify-content: space-between; }
 .cl-send { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; color: #fff !important; background: var(--cl-accent); border: 0; border-radius: 10px; cursor: pointer; }
 .cl-send:disabled { background: #efbcae; cursor: default; }
